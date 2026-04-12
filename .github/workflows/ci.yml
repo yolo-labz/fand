@@ -175,4 +175,6 @@ jobs:
           persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - run: nix eval .#darwinModules.default --apply 'mod: builtins.typeOf mod'
+      - name: Eval darwin module
+        run: |
+          nix eval .#darwinModules.default --apply 'mod: builtins.typeOf mod'
