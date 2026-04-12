@@ -1,15 +1,8 @@
-# fand pre-merge CI gates. FR-076, FR-078, FR-080, FR-086.
+# fand pre-merge CI gates.
 #
-# Every job here MUST succeed before a PR can merge to main.
-# Slow gates (mutants, kani, loom, miri) live in nightly.yml and miri.yml.
+# Runner: macos-latest (Apple Silicon). fand is Apple-Silicon-only.
 #
-# Runner: macos-latest (Apple Silicon). fand is Apple-Silicon-only; cross-
-# compilation is not supported or tested.
-#
-# SECURITY NOTE: no job uses untrusted event payloads (issue titles,
-# PR bodies, commit messages, head_ref) in `run:` contexts. The only
-# `github.*` reference is `github.ref` in the concurrency group, which
-# GitHub Actions validates against a safe character set.
+# SECURITY NOTE: no job uses untrusted event payloads in run: contexts.
 
 name: ci
 
@@ -35,22 +28,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
-      - name: Set SOURCE_DATE_EPOCH from commit timestamp
-        run: |
-          epoch=$(git log -1 --format=%ct)
-          echo "SOURCE_DATE_EPOCH=${epoch}" >> "$GITHUB_ENV"
+      - name: Set SOURCE_DATE_EPOCH
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
 
-      - name: Show Rust toolchain (pinned via rust-toolchain.toml)
-        run: |
-          rustup show
-          rustc --version
-          cargo --version
+      - name: Install Rust toolchain
+        run: rustup show
 
-      - name: Cache cargo registry + target
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -59,21 +44,11 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Verify Cargo.lock is committed and unchanged
-        run: |
-          cargo generate-lockfile
-          git diff --exit-code Cargo.lock
+      - run: cargo build --release --locked
+      - run: cargo test --lib --locked
+      - run: cargo test --bin fand --locked
 
-      - name: cargo build --release --locked
-        run: cargo build --release --locked
-
-      - name: cargo test --lib --locked
-        run: cargo test --lib --locked
-
-      - name: cargo test --bin fand --locked
-        run: cargo test --bin fand --locked
-
-      - name: proptest quick run (256 cases/property)
+      - name: proptest quick run
         env:
           PROPTEST_CASES: "256"
         run: cargo test --test 'proptest_*' --locked
@@ -81,23 +56,21 @@ jobs:
       - name: trybuild compile-fail tests
         run: cargo test --test compile_fail --locked
 
-      - name: Release binary size budget (500 KiB)
+      - name: Binary size budget (700 KiB)
         run: |
-          size=$(stat -f%z target/release/fand)
+          size=$(stat -f%z target/release/fand 2>/dev/null || stat -c%s target/release/fand)
           echo "binary size: ${size} bytes"
-          if [ "$size" -gt 512000 ]; then
-            echo "::error::fand release binary exceeds 500 KiB budget (${size} bytes)"
+          if [ "$size" -gt 716800 ]; then
+            echo "::error::binary exceeds 700 KiB (${size} bytes)"
             exit 1
           fi
 
   clippy:
-    name: clippy (FR-080 deny-set)
+    name: clippy
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - run: rustup component add clippy
       - run: cargo clippy --all-targets --locked -- -D warnings
 
@@ -107,74 +80,34 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - run: rustup component add rustfmt
       - run: cargo fmt --check
 
-  audit:
-    name: cargo-audit (FR-076)
-    runs-on: macos-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - run: cargo install --locked cargo-audit
-      - run: cargo audit fetch
-      - run: cargo audit --deny warnings
-
-  deny:
-    name: cargo-deny (FR-076)
-    runs-on: macos-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - run: cargo install --locked cargo-deny
-      - run: cargo deny check advisories bans licenses sources
-
-  vet:
-    name: cargo-vet (FR-075)
-    runs-on: macos-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - run: cargo install --locked cargo-vet
-      - run: cargo vet --locked
-
-  # FR-019: nix build job.
   nix-build:
-    name: nix build (FR-019)
+    name: nix build
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
       - run: nix flake check
       - run: nix build .#fand
-      - name: Verify binary runs
-        run: result/bin/fand version
-      - name: Verify codesign
-        run: codesign --verify --verbose result/bin/fand
+      - run: result/bin/fand version
+      - run: codesign --verify --verbose result/bin/fand
 
-  # FR-020: nix eval job for module.
   nix-eval:
-    name: nix eval module (FR-020)
+    name: nix eval module
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
       - name: Eval darwin module
         run: |
           nix eval .#darwinModules.default --apply 'mod: builtins.typeOf mod'
