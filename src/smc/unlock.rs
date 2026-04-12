@@ -17,8 +17,8 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(unsafe_code)] // GCD timer FFI is declared in src/launchd/gcd.rs; no raw unsafe here
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
@@ -74,10 +74,7 @@ impl DiagnosticUnlockSession {
     /// the session state machine (useful for tests that want to verify the
     /// state machine without spawning a real thread).
     #[must_use]
-    pub fn new(
-        session_id: SessionId,
-        release_in_progress: Arc<AtomicBool>,
-    ) -> Self {
+    pub fn new(session_id: SessionId, release_in_progress: Arc<AtomicBool>) -> Self {
         let now = Self::wall_clock_ns();
         Self {
             session_id,
@@ -233,10 +230,7 @@ mod tests {
     use std::thread;
 
     fn fresh_session() -> DiagnosticUnlockSession {
-        DiagnosticUnlockSession::new(
-            SessionId::new(),
-            Arc::new(AtomicBool::new(false)),
-        )
+        DiagnosticUnlockSession::new(SessionId::new(), Arc::new(AtomicBool::new(false)))
     }
 
     #[test]
@@ -256,7 +250,10 @@ mod tests {
         session.heartbeat();
         let after_heartbeat = session.ms_since_last_heartbeat();
         // After heartbeat the elapsed resets to ~0 (may be a few ms by the time we read it).
-        assert!(after_heartbeat < 50, "heartbeat should reset elapsed, got {after_heartbeat}");
+        assert!(
+            after_heartbeat < 50,
+            "heartbeat should reset elapsed, got {after_heartbeat}"
+        );
         assert!(initial <= after_sleep);
     }
 

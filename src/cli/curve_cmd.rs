@@ -73,15 +73,13 @@ pub fn execute(args: &[String]) {
 
     // FR-052: plot all fans if --fan is omitted, or just the specified one.
     let fans_to_plot: Vec<&crate::config::schema::FanBinding> = match fan_filter {
-        Some(idx) => {
-            match config.fan.iter().find(|f| f.index == idx) {
-                Some(f) => vec![f],
-                None => {
-                    eprintln!("fand curve: fan index {idx} not found in config");
-                    std::process::exit(1);
-                }
+        Some(idx) => match config.fan.iter().find(|f| f.index == idx) {
+            Some(f) => vec![f],
+            None => {
+                eprintln!("fand curve: fan index {idx} not found in config");
+                std::process::exit(1);
             }
-        }
+        },
         None => config.fan.iter().collect(),
     };
 
@@ -92,10 +90,14 @@ pub fn execute(args: &[String]) {
 
 #[allow(clippy::print_stdout, clippy::cast_precision_loss)]
 fn print_curve(fan: &crate::config::schema::FanBinding) {
-    let sensors_str: Vec<String> = fan.sensors.iter().map(|s| match s {
-        crate::config::schema::SensorRef::Name(n) => n.clone(),
-        crate::config::schema::SensorRef::Smc { smc } => smc.clone(),
-    }).collect();
+    let sensors_str: Vec<String> = fan
+        .sensors
+        .iter()
+        .map(|s| match s {
+            crate::config::schema::SensorRef::Name(n) => n.clone(),
+            crate::config::schema::SensorRef::Smc { smc } => smc.clone(),
+        })
+        .collect();
 
     println!(
         "Fan {} — sensors: {} — hysteresis: {:.1}/{:.1}°C",
@@ -123,10 +125,7 @@ fn print_curve(fan: &crate::config::schema::FanBinding) {
         .collect();
 
     // Curve breakpoints as point markers.
-    let knots: Vec<(f32, f32)> = fan.curve
-        .iter()
-        .map(|&(t, rpm)| (t, rpm as f32))
-        .collect();
+    let knots: Vec<(f32, f32)> = fan.curve.iter().map(|&(t, rpm)| (t, rpm as f32)).collect();
 
     // Use textplots.
     use textplots::{Chart, Plot, Shape};
@@ -141,7 +140,10 @@ fn print_curve(fan: &crate::config::schema::FanBinding) {
         println!("    {temp:>6.1}°C → {rpm:>5} RPM");
     }
     if fan.hysteresis_down > 0.0 {
-        println!("  Hysteresis band: cooling requires {:.1}°C additional drop before RPM decreases.", fan.hysteresis_down);
+        println!(
+            "  Hysteresis band: cooling requires {:.1}°C additional drop before RPM decreases.",
+            fan.hysteresis_down
+        );
     }
     println!("  (no SMC access — live sensor marker unavailable)");
     println!();

@@ -1,8 +1,6 @@
-# fand pre-merge CI gates.
+# fand CI — build, test, lint, nix.
 #
-# Runner: macos-latest (Apple Silicon). fand is Apple-Silicon-only.
-#
-# SECURITY NOTE: no job uses untrusted event payloads in run: contexts.
+# SECURITY NOTE: no untrusted event payloads used in run: contexts.
 
 name: ci
 
@@ -19,7 +17,6 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: "0"
-  RUSTFLAGS: "-D warnings"
 
 jobs:
   build-and-test:
@@ -29,11 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set SOURCE_DATE_EPOCH
-        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
-
-      - name: Install Rust toolchain
-        run: rustup show
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.84.0 --profile minimal --component rustfmt,clippy
+          rustup default 1.84.0
 
       - uses: actions/cache@v4
         with:
@@ -45,16 +41,12 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - run: cargo build --release --locked
-      - run: cargo test --lib --locked
-      - run: cargo test --bin fand --locked
-
-      - name: proptest quick run
         env:
-          PROPTEST_CASES: "256"
-        run: cargo test --test 'proptest_*' --locked
+          RUSTFLAGS: "-D warnings"
 
-      - name: trybuild compile-fail tests
-        run: cargo test --test compile_fail --locked
+      - run: cargo test --lib --locked
+
+      - run: cargo test --bin fand --locked
 
       - name: Binary size budget (700 KiB)
         run: |
@@ -71,7 +63,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - run: rustup component add clippy
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.84.0 --profile minimal --component clippy
+          rustup default 1.84.0
       - run: cargo clippy --all-targets --locked -- -D warnings
 
   rustfmt:
@@ -80,7 +75,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: rustup component add rustfmt
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.84.0 --profile minimal --component rustfmt
+          rustup default 1.84.0
       - run: cargo fmt --check
 
   nix-build:

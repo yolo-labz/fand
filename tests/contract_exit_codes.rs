@@ -38,10 +38,7 @@ fn bad_rpm_value_exits_nonzero() {
         .status()
         .expect("spawn fand");
     let code = status.code().expect("expected exit code");
-    assert!(
-        code != 0,
-        "expected non-zero exit for bad rpm, got {code}"
-    );
+    assert!(code != 0, "expected non-zero exit for bad rpm, got {code}");
 }
 
 #[test]
@@ -60,7 +57,13 @@ fn mutually_exclusive_dry_run_and_commit_exits_nonzero() {
     // --dry-run and --commit cannot coexist.
     let status = Command::new(fand_binary())
         .args([
-            "set", "--fan", "0", "--rpm", "3000", "--dry-run", "--commit",
+            "set",
+            "--fan",
+            "0",
+            "--rpm",
+            "3000",
+            "--dry-run",
+            "--commit",
         ])
         .status()
         .expect("spawn fand");

@@ -117,7 +117,10 @@ fn dry_run_json_emits_schema_uri() {
         .output()
         .expect("spawn fand");
 
-    assert!(output.status.success(), "dry-run --json did not exit cleanly");
+    assert!(
+        output.status.success(),
+        "dry-run --json did not exit cleanly"
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("\"$schema\""),

@@ -52,7 +52,9 @@ fn golden_subcommand_is_selftest() {
 #[test]
 fn golden_session_id_is_26_char_ulid() {
     let v: Value = serde_json::from_str(GOLDEN).unwrap();
-    let sid = v["session_id"].as_str().expect("session_id must be a string");
+    let sid = v["session_id"]
+        .as_str()
+        .expect("session_id must be a string");
     assert_eq!(sid.len(), 26, "session_id must be exactly 26 chars");
     for c in sid.chars() {
         // Crockford base32 + allow letters we use in the "REDACT" placeholder.
@@ -144,6 +146,7 @@ fn golden_fand_version_is_semver_shape() {
     let parts: Vec<&str> = ver.split('.').collect();
     assert_eq!(parts.len(), 3, "fand_version must be x.y.z — got {ver}");
     for p in parts {
-        p.parse::<u32>().unwrap_or_else(|_| panic!("non-numeric component in {ver}"));
+        p.parse::<u32>()
+            .unwrap_or_else(|_| panic!("non-numeric component in {ver}"));
     }
 }

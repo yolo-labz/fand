@@ -67,13 +67,14 @@ const _: () = assert!(size_of::<RoundTripRecord>() == 24);
 impl RoundTripRecord {
     /// Construct a successful-match record.
     #[must_use]
-    pub fn new_match(
-        timestamp_ns: u64,
-        fourcc: u32,
-        written: &[u8],
-        readback: &[u8],
-    ) -> Self {
-        Self::new(timestamp_ns, fourcc, written, readback, RoundTripOutcome::Match)
+    pub fn new_match(timestamp_ns: u64, fourcc: u32, written: &[u8], readback: &[u8]) -> Self {
+        Self::new(
+            timestamp_ns,
+            fourcc,
+            written,
+            readback,
+            RoundTripOutcome::Match,
+        )
     }
 
     /// Construct a record with an explicit outcome.

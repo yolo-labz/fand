@@ -77,11 +77,7 @@ extern "C" fn timer_handler(ctx: *mut std::ffi::c_void) {
     (context.callback)();
 }
 
-pub fn start_timer(
-    interval_ms: u64,
-    leeway_ms: u64,
-    callback: TickCallback,
-) -> TimerHandle {
+pub fn start_timer(interval_ms: u64, leeway_ms: u64, callback: TickCallback) -> TimerHandle {
     let ctx = Box::into_raw(Box::new(TimerContext { callback }));
 
     // SAFETY: dispatch_get_main_queue returns the global main queue (always valid).
@@ -160,12 +156,8 @@ pub fn create_watchdog(
     }
 
     // SAFETY: Creating a separate serial queue for the watchdog.
-    let queue = unsafe {
-        dispatch_queue_create(
-            b"com.fand.watchdog\0".as_ptr(),
-            std::ptr::null_mut(),
-        )
-    };
+    let queue =
+        unsafe { dispatch_queue_create(b"com.fand.watchdog\0".as_ptr(), std::ptr::null_mut()) };
 
     // SAFETY: Creating timer on the watchdog queue (separate from main).
     let source = unsafe {

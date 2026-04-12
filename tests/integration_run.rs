@@ -18,7 +18,13 @@ fn fand_binary() -> PathBuf {
 fn dry_run_once_exits_zero() {
     let output = Command::new(fand_binary())
         .env("FAND_ALLOW_TMP_CONFIG", "1")
-        .args(["run", "--config", "tests/fixtures/test-curve.toml", "--dry-run", "--once"])
+        .args([
+            "run",
+            "--config",
+            "tests/fixtures/test-curve.toml",
+            "--dry-run",
+            "--once",
+        ])
         .output()
         .expect("spawn fand");
     assert!(
@@ -33,11 +39,20 @@ fn dry_run_once_exits_zero() {
 fn dry_run_once_prints_tick_output() {
     let output = Command::new(fand_binary())
         .env("FAND_ALLOW_TMP_CONFIG", "1")
-        .args(["run", "--config", "tests/fixtures/test-curve.toml", "--dry-run", "--once"])
+        .args([
+            "run",
+            "--config",
+            "tests/fixtures/test-curve.toml",
+            "--dry-run",
+            "--once",
+        ])
         .output()
         .expect("spawn fand");
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("tick 1"), "expected tick output, got: {stdout}");
+    assert!(
+        stdout.contains("tick 1"),
+        "expected tick output, got: {stdout}"
+    );
     assert!(stdout.contains("fan 0"), "expected fan 0 in output");
     assert!(stdout.contains("RPM"), "expected RPM in output");
 }
@@ -47,7 +62,13 @@ fn dry_run_once_completes_in_under_two_seconds() {
     let start = Instant::now();
     let output = Command::new(fand_binary())
         .env("FAND_ALLOW_TMP_CONFIG", "1")
-        .args(["run", "--config", "tests/fixtures/test-curve.toml", "--dry-run", "--once"])
+        .args([
+            "run",
+            "--config",
+            "tests/fixtures/test-curve.toml",
+            "--dry-run",
+            "--once",
+        ])
         .output()
         .expect("spawn fand");
     let elapsed = start.elapsed();
@@ -62,8 +83,12 @@ fn dry_run_once_completes_in_under_two_seconds() {
 fn dry_run_json_emits_valid_jsonl() {
     let output = Command::new(fand_binary())
         .args([
-            "run", "--config", "tests/fixtures/test-curve.toml",
-            "--dry-run", "--once", "--json",
+            "run",
+            "--config",
+            "tests/fixtures/test-curve.toml",
+            "--dry-run",
+            "--once",
+            "--json",
         ])
         .output()
         .expect("spawn fand");
@@ -73,8 +98,8 @@ fn dry_run_json_emits_valid_jsonl() {
     let lines: Vec<&str> = stdout.trim().lines().collect();
     assert_eq!(lines.len(), 1, "expected 1 JSONL line, got {}", lines.len());
     // Should be valid JSON.
-    let parsed: serde_json::Value = serde_json::from_str(lines[0])
-        .expect("JSONL line must be valid JSON");
+    let parsed: serde_json::Value =
+        serde_json::from_str(lines[0]).expect("JSONL line must be valid JSON");
     assert!(parsed.is_object());
     assert!(parsed["$schema"].is_string());
     assert!(parsed["session_id"].is_string());
@@ -85,7 +110,13 @@ fn dry_run_json_emits_valid_jsonl() {
 #[test]
 fn missing_config_exits_one() {
     let status = Command::new(fand_binary())
-        .args(["run", "--config", "/nonexistent/fand.toml", "--dry-run", "--once"])
+        .args([
+            "run",
+            "--config",
+            "/nonexistent/fand.toml",
+            "--dry-run",
+            "--once",
+        ])
         .status()
         .expect("spawn fand");
     let code = status.code().expect("exit code");

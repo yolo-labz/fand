@@ -113,9 +113,7 @@ fn run_with_code(args: &[String]) -> i32 {
                 drop(session); // teardown runs in Drop
                 return code_from_smc_error(&e);
             }
-            eprintln!(
-                "fand set: commit succeeded — holding override. Press Ctrl-C to release."
-            );
+            eprintln!("fand set: commit succeeded — holding override. Press Ctrl-C to release.");
 
             // Enter the hold loop. The dedicated signal thread (RD-03) is
             // blocked on `Signals::forever()` and will call `std::process::exit(0)`
@@ -158,13 +156,17 @@ fn parse_args(args: &[String]) -> Result<CliSetArgs, String> {
         match args[i].as_str() {
             "--fan" => {
                 i += 1;
-                let v = args.get(i).ok_or_else(|| "--fan requires a value".to_string())?;
+                let v = args
+                    .get(i)
+                    .ok_or_else(|| "--fan requires a value".to_string())?;
                 let parsed = parse_fan_index(v).map_err(|e| format!("--fan: {e}"))?;
                 fan_index = Some(parsed);
             }
             "--rpm" => {
                 i += 1;
-                let v = args.get(i).ok_or_else(|| "--rpm requires a value".to_string())?;
+                let v = args
+                    .get(i)
+                    .ok_or_else(|| "--rpm requires a value".to_string())?;
                 let parsed = parse_rpm(v).map_err(|e| format!("--rpm: {e}"))?;
                 raw_rpm = Some(parsed);
             }
@@ -193,7 +195,12 @@ fn parse_args(args: &[String]) -> Result<CliSetArgs, String> {
     let raw_rpm = raw_rpm.ok_or_else(|| "--rpm is required".to_string())?;
     let mode = mode.ok_or_else(|| "one of --dry-run or --commit is required".to_string())?;
 
-    Ok(CliSetArgs { fan_index, raw_rpm, mode, json_output })
+    Ok(CliSetArgs {
+        fan_index,
+        raw_rpm,
+        mode,
+        json_output,
+    })
 }
 
 fn print_dry_run_human(
@@ -202,7 +209,10 @@ fn print_dry_run_human(
     clamped: ClampedRpm,
     was_clamped: bool,
 ) {
-    println!("fand set --fan {} --rpm {} --dry-run", parsed.fan_index, parsed.raw_rpm);
+    println!(
+        "fand set --fan {} --rpm {} --dry-run",
+        parsed.fan_index, parsed.raw_rpm
+    );
     println!("  fan:            {}", parsed.fan_index);
     println!("  envelope:       [{:.1}, {:.1}]", fan.min_rpm, fan.max_rpm);
     println!("  raw request:    {:.1}", parsed.raw_rpm);
@@ -235,15 +245,19 @@ fn print_dry_run_human(
         println!("  round-trip reads (expected):");
         println!("    F{}md    = 1", parsed.fan_index);
         println!("  teardown on exit:");
-        println!("    F{}md = 0  (return to system thermal manager)", parsed.fan_index);
-    } else {
         println!(
-            "    (none — Apple Silicon M-series exposes only F0md=0/auto and F0md=1/min;"
+            "    F{}md = 0  (return to system thermal manager)",
+            parsed.fan_index
         );
+    } else {
+        println!("    (none — Apple Silicon M-series exposes only F0md=0/auto and F0md=1/min;");
         println!("     arbitrary RPM targets are not writable via the SMC interface");
         println!("     per research.md RD-08. --commit at this RPM would be REJECTED.)");
         println!();
-        println!("  to engage forced minimum:  fand set --fan {} --rpm {} --commit", parsed.fan_index, fan.min_rpm as u32);
+        println!(
+            "  to engage forced minimum:  fand set --fan {} --rpm {} --commit",
+            parsed.fan_index, fan.min_rpm as u32
+        );
     }
 }
 
@@ -271,10 +285,7 @@ fn print_dry_run_json(
     print!(r#""index":{},"#, parsed.fan_index);
     print!(r#""min_rpm":{:.1},"#, fan.min_rpm);
     print!(r#""max_rpm":{:.1},"#, fan.max_rpm);
-    print!(
-        r#""mode_key":"{}""#,
-        fourcc_display(fan.mode_key)
-    );
+    print!(r#""mode_key":"{}""#, fourcc_display(fan.mode_key));
     print!(r#"}},"#);
     print!(r#""request":{{"#);
     print!(r#""raw_rpm":{:.1},"#, parsed.raw_rpm);
@@ -283,10 +294,7 @@ fn print_dry_run_json(
     print!(r#"}},"#);
     print!(r#""planned_writes":["#);
     print!(r#"{{"step":1,"key":"Ftst","value":1}},"#);
-    print!(
-        r#"{{"step":2,"key":"F{}Md","value":1}},"#,
-        parsed.fan_index
-    );
+    print!(r#"{{"step":2,"key":"F{}Md","value":1}},"#, parsed.fan_index);
     print!(
         r#"{{"step":3,"key":"F{}Tg","value":{}}}"#,
         parsed.fan_index,
@@ -294,10 +302,7 @@ fn print_dry_run_json(
     );
     print!(r#"],"#);
     print!(r#""planned_teardown":["#);
-    print!(
-        r#"{{"step":1,"key":"F{}Md","value":0}},"#,
-        parsed.fan_index
-    );
+    print!(r#"{{"step":1,"key":"F{}Md","value":0}},"#, parsed.fan_index);
     print!(r#"{{"step":2,"key":"Ftst","value":0}}"#);
     print!(r#"]"#);
     println!("}}");

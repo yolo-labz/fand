@@ -48,8 +48,8 @@ fn wall_clock_ns() -> u64 {
         .unwrap_or(0)
 }
 use crate::smc::keys::{
-    SMC_CMD_GET_KEY_FROM_IDX, SMC_CMD_GET_KEY_INFO, SMC_CMD_READ_KEY, SMC_CMD_WRITE_KEY, TYPE_FLT,
-    TYPE_UI32, TYPE_UI8, WritableKey,
+    WritableKey, SMC_CMD_GET_KEY_FROM_IDX, SMC_CMD_GET_KEY_INFO, SMC_CMD_READ_KEY,
+    SMC_CMD_WRITE_KEY, TYPE_FLT, TYPE_UI32, TYPE_UI8,
 };
 
 // ------------------------------------------------------------------------
@@ -95,10 +95,7 @@ extern "C" {
     fn IOObjectRelease(object: IoObjectT) -> KernReturnT;
 
     /// Returns non-zero if `object` conforms to the given class name.
-    fn IOObjectConformsTo(
-        object: IoObjectT,
-        class_name: *const core::ffi::c_char,
-    ) -> u32;
+    fn IOObjectConformsTo(object: IoObjectT, class_name: *const core::ffi::c_char) -> u32;
 
     /// The core IOKit struct-method call. Selector 2 is kSMCHandleYPCEvent.
     fn IOConnectCallStructMethod(
@@ -129,20 +126,11 @@ extern "C" {
     ///
     /// Returns `KERN_SUCCESS` on success, `KERN_NOT_SUPPORTED` on kernels that
     /// lack port guards, or various other kern_return_t values.
-    fn mach_port_guard(
-        task: u32,
-        name: u32,
-        guard: u64,
-        strict: u32,
-    ) -> KernReturnT;
+    fn mach_port_guard(task: u32, name: u32, guard: u64, strict: u32) -> KernReturnT;
 
     /// Remove the guard from a port. Must be called before `IOServiceClose`
     /// or the close will fail with an invalid-guard exception.
-    fn mach_port_unguard(
-        task: u32,
-        name: u32,
-        guard: u64,
-    ) -> KernReturnT;
+    fn mach_port_unguard(task: u32, name: u32, guard: u64) -> KernReturnT;
 }
 
 /// `MPG_STRICT` — fatal-on-violation mode. The 1-bit flag value documented
@@ -224,17 +212,17 @@ unsafe impl bytemuck::Pod for SMCKeyInfoData {}
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct SMCParamStruct {
-    pub key: u32,                     // offset 0
-    pub vers: [u8; 6],                // offset 4
-    _pad_head: [u8; 2],               // offset 10 — alignment for pLimitData
-    pub p_limit_data: [u8; 16],       // offset 12
-    pub key_info: SMCKeyInfoData,     // offset 28 (12 bytes)
-    pub result: u8,                   // offset 40
-    pub status: u8,                   // offset 41
-    pub data8: u8,                    // offset 42
-    _pad_mid: u8,                     // offset 43 — alignment for data32
-    pub data32: u32,                  // offset 44
-    pub bytes: [u8; 32],              // offset 48
+    pub key: u32,                 // offset 0
+    pub vers: [u8; 6],            // offset 4
+    _pad_head: [u8; 2],           // offset 10 — alignment for pLimitData
+    pub p_limit_data: [u8; 16],   // offset 12
+    pub key_info: SMCKeyInfoData, // offset 28 (12 bytes)
+    pub result: u8,               // offset 40
+    pub status: u8,               // offset 41
+    pub data8: u8,                // offset 42
+    _pad_mid: u8,                 // offset 43 — alignment for data32
+    pub data32: u32,              // offset 44
+    pub bytes: [u8; 32],          // offset 48
 }
 
 // SAFETY: SMCParamStruct is #[repr(C)], all fields are Pod or explicit padding,
@@ -314,23 +302,53 @@ pub enum SmcError {
     ServiceNotFound,
     OpenFailed(KernReturnT),
     OpenTimeout,
-    CallFailed { selector: u32, kr: KernReturnT, cmd: u8 },
-    SmcResult { cmd: u8, result_byte: u8 },
+    CallFailed {
+        selector: u32,
+        kr: KernReturnT,
+        cmd: u8,
+    },
+    SmcResult {
+        cmd: u8,
+        result_byte: u8,
+    },
     KeyNotFound(u32),
-    TypeMismatch { fourcc: u32, expected: u32, got: u32 },
-    DataSizeClamped { fourcc: u32, reported: u32 },
-    InvalidFloat { fourcc: u32 },
-    EmptyResponse { fourcc: u32 },
+    TypeMismatch {
+        fourcc: u32,
+        expected: u32,
+        got: u32,
+    },
+    DataSizeClamped {
+        fourcc: u32,
+        reported: u32,
+    },
+    InvalidFloat {
+        fourcc: u32,
+    },
+    EmptyResponse {
+        fourcc: u32,
+    },
     AlreadyClosed,
-    Busy { retried: bool },
-    Timeout { retried: bool },
-    AttributeDenied { fourcc: u32 },
+    Busy {
+        retried: bool,
+    },
+    Timeout {
+        retried: bool,
+    },
+    AttributeDenied {
+        fourcc: u32,
+    },
     WriteDenied(u32),
-    SizeMismatch { fourcc: u32, expected: u32, got: u32 },
-    EndiannessUnplausible { fourcc: u32, got: u32 },
+    SizeMismatch {
+        fourcc: u32,
+        expected: u32,
+        got: u32,
+    },
+    EndiannessUnplausible {
+        fourcc: u32,
+        got: u32,
+    },
 
     // ---- feature 005 extensions (FR-031, FR-034, FR-069, FR-098, FR-103) ----
-
     /// The `Ftst` diagnostic unlock key read-back does not match the written value.
     /// Fatal per FR-005.
     UnlockMismatch {
@@ -438,7 +456,11 @@ impl core::fmt::Display for SmcError {
                 }
             }
             Self::KeyNotFound(fourcc) => write!(f, "SMC key {} not found", fourcc_to_str(*fourcc)),
-            Self::TypeMismatch { fourcc, expected, got } => write!(
+            Self::TypeMismatch {
+                fourcc,
+                expected,
+                got,
+            } => write!(
                 f,
                 "SMC key {} type mismatch: expected {}, got {}",
                 fourcc_to_str(*fourcc),
@@ -461,14 +483,8 @@ impl core::fmt::Display for SmcError {
                 fourcc_to_str(*fourcc)
             ),
             Self::AlreadyClosed => write!(f, "SmcConnection already closed"),
-            Self::Busy { retried } => write!(
-                f,
-                "SMC kIOReturnBusy (retried: {retried})"
-            ),
-            Self::Timeout { retried } => write!(
-                f,
-                "SMC kIOReturnTimeout (retried: {retried})"
-            ),
+            Self::Busy { retried } => write!(f, "SMC kIOReturnBusy (retried: {retried})"),
+            Self::Timeout { retried } => write!(f, "SMC kIOReturnTimeout (retried: {retried})"),
             Self::AttributeDenied { fourcc } => write!(
                 f,
                 "SMC key {} attribute bits forbid read (WRITE-only or FUNCTION)",
@@ -479,7 +495,11 @@ impl core::fmt::Display for SmcError {
                 "SMC key {} not in write whitelist",
                 fourcc_to_str(*fourcc)
             ),
-            Self::SizeMismatch { fourcc, expected, got } => write!(
+            Self::SizeMismatch {
+                fourcc,
+                expected,
+                got,
+            } => write!(
                 f,
                 "SMC key {} size mismatch: expected {expected} bytes, got {got}",
                 fourcc_to_str(*fourcc)
@@ -492,24 +512,45 @@ impl core::fmt::Display for SmcError {
                 fourcc_to_str(*fourcc)
             ),
             // ---- feature 005 variants ----
-            Self::UnlockMismatch { expected, got, session, .. } => write!(
+            Self::UnlockMismatch {
+                expected,
+                got,
+                session,
+                ..
+            } => write!(
                 f,
                 "session {session}: diagnostic unlock readback mismatch: wrote Ftst={expected}, \
                  read Ftst={got} — CRITICAL, fan may remain in manual mode indefinitely"
             ),
-            Self::UnlockRejected { result_byte, session } => write!(
+            Self::UnlockRejected {
+                result_byte,
+                session,
+            } => write!(
                 f,
                 "session {session}: SMC rejected Ftst=1 with result byte 0x{result_byte:02X} — \
                  diagnostic unlock failed, write path is unavailable"
             ),
-            Self::WriteRefused { fourcc, result_byte, context, session, .. } => write!(
+            Self::WriteRefused {
+                fourcc,
+                result_byte,
+                context,
+                session,
+                ..
+            } => write!(
                 f,
                 "session {session}: write refused on {} ({context}) with SMC result byte \
                  0x{result_byte:02X}",
                 fourcc_to_str(*fourcc)
             ),
             Self::WriteReadbackMismatch {
-                fourcc, expected, expected_len, got, got_len, session, iteration, ..
+                fourcc,
+                expected,
+                expected_len,
+                got,
+                got_len,
+                session,
+                iteration,
+                ..
             } => {
                 if let Some(iter) = iteration {
                     write!(
@@ -530,12 +571,18 @@ impl core::fmt::Display for SmcError {
                     )
                 }
             }
-            Self::WatchdogFired { elapsed_ms, session } => write!(
+            Self::WatchdogFired {
+                elapsed_ms,
+                session,
+            } => write!(
                 f,
                 "session {session}: userspace watchdog fired after {elapsed_ms} ms without a \
                  successful round-trip — fans returned to auto control"
             ),
-            Self::ConflictDetected { holder_pid, lockfile_path } => write!(
+            Self::ConflictDetected {
+                holder_pid,
+                lockfile_path,
+            } => write!(
                 f,
                 "another fand instance holds {lockfile_path} (PID {holder_pid}, untrusted — \
                  verify with ps before acting). Wait for it to finish or investigate if stuck"
@@ -734,14 +781,8 @@ impl SmcConnection {
         let mut conn: IoConnectT = 0;
         // SAFETY: mach_task_self() returns a borrowed task port (do not deallocate).
         // service is a valid io_service_t. We pass &mut conn for the out parameter.
-        let kr = unsafe {
-            IOServiceOpen(
-                service,
-                mach_task_self(),
-                0,
-                std::ptr::addr_of_mut!(conn),
-            )
-        };
+        let kr =
+            unsafe { IOServiceOpen(service, mach_task_self(), 0, std::ptr::addr_of_mut!(conn)) };
 
         // FR-004: Release the service object regardless of whether the open
         // succeeded. The connection (if created) holds its own reference to the
@@ -774,9 +815,7 @@ impl SmcConnection {
         // SAFETY: conn is a valid io_connect_t owned by this function; port_guard
         // is a fresh random u64; mach_task_self() returns the current task port;
         // MPG_STRICT is the documented strict-mode flag.
-        let guard_kr = unsafe {
-            mach_port_guard(mach_task_self(), conn, port_guard, MPG_STRICT)
-        };
+        let guard_kr = unsafe { mach_port_guard(mach_task_self(), conn, port_guard, MPG_STRICT) };
         // FR-073 amendment: `io_connect_t` ports are send rights on many kernels,
         // and `mach_port_guard` is documented to operate on receive rights. On
         // modern macOS we observe `0x11` (KERN_INVALID_RIGHT-equivalent) on the
@@ -846,9 +885,7 @@ impl SmcConnection {
                 // is the port name we guarded in open(); self.port_guard is
                 // the cookie we installed. No concurrent access because we
                 // just won the compare_exchange above.
-                let _ = unsafe {
-                    mach_port_unguard(mach_task_self(), raw_conn, self.port_guard)
-                };
+                let _ = unsafe { mach_port_unguard(mach_task_self(), raw_conn, self.port_guard) };
             }
             // SAFETY: `raw_conn` was obtained from a successful `IOServiceOpen`
             // via the AtomicBool critical section, which guarantees no other
@@ -885,11 +922,7 @@ impl SmcConnection {
     /// - `CallFailed` if the IOKit call returned a non-zero `kern_return_t`
     ///   (other than retriable Busy/Timeout).
     /// - `Busy` / `Timeout` if two consecutive retries failed.
-    fn call_struct(
-        &self,
-        cmd: u8,
-        mut input: SMCParamStruct,
-    ) -> Result<SMCParamStruct, SmcError> {
+    fn call_struct(&self, cmd: u8, mut input: SMCParamStruct) -> Result<SMCParamStruct, SmcError> {
         if !self.is_open() {
             return Err(SmcError::AlreadyClosed);
         }
@@ -1045,10 +1078,7 @@ impl SmcConnection {
     /// # Errors
     /// See `SmcError` variants.
     #[must_use = "IOKit errors must be handled"]
-    pub fn read_key(
-        &mut self,
-        fourcc: u32,
-    ) -> Result<(KeyInfo, [u8; 32]), SmcError> {
+    pub fn read_key(&mut self, fourcc: u32) -> Result<(KeyInfo, [u8; 32]), SmcError> {
         let key_info = self.read_key_info(fourcc)?;
 
         let mut input: SMCParamStruct = bytemuck::Zeroable::zeroed();
@@ -1248,8 +1278,9 @@ impl SmcConnection {
                 got: key.data_type(),
             });
         }
-        let bytes = crate::smc::types::encode_flt(value)
-            .map_err(|_| SmcError::InvalidFloat { fourcc: key.fourcc() })?;
+        let bytes = crate::smc::types::encode_flt(value).map_err(|_| SmcError::InvalidFloat {
+            fourcc: key.fourcc(),
+        })?;
         self.write_key(key, &bytes)
     }
 
@@ -1515,10 +1546,7 @@ impl SmcConnection {
     /// # Errors
     ///
     /// Any SMC / IOKit error. Callers typically ignore the return value.
-    pub(in crate::smc) fn force_write_auto_mode(
-        &mut self,
-        fan_idx: u8,
-    ) -> Result<(), SmcError> {
+    pub(in crate::smc) fn force_write_auto_mode(&mut self, fan_idx: u8) -> Result<(), SmcError> {
         let key = WritableKey::fan_mode(fan_idx);
         self.write_u8(&key, 0)
     }
@@ -1679,13 +1707,42 @@ mod tests {
         let sid = SessionId::new();
         let fixtures: Vec<(SmcError, &str)> = vec![
             (SmcError::ServiceNotFound, "SERVICE_NOT_FOUND"),
-            (SmcError::OpenFailed(0xE00002C1_u32 as KernReturnT), "OPEN_FAILED"),
+            (
+                SmcError::OpenFailed(0xE00002C1_u32 as KernReturnT),
+                "OPEN_FAILED",
+            ),
             (SmcError::OpenTimeout, "OPEN_TIMEOUT"),
-            (SmcError::CallFailed { selector: 2, kr: 0, cmd: 5 }, "CALL_FAILED"),
-            (SmcError::SmcResult { cmd: 5, result_byte: 0x84 }, "SMC_RESULT"),
+            (
+                SmcError::CallFailed {
+                    selector: 2,
+                    kr: 0,
+                    cmd: 5,
+                },
+                "CALL_FAILED",
+            ),
+            (
+                SmcError::SmcResult {
+                    cmd: 5,
+                    result_byte: 0x84,
+                },
+                "SMC_RESULT",
+            ),
             (SmcError::KeyNotFound(0x4630_4D64), "KEY_NOT_FOUND"),
-            (SmcError::TypeMismatch { fourcc: 0, expected: 0, got: 0 }, "TYPE_MISMATCH"),
-            (SmcError::DataSizeClamped { fourcc: 0, reported: 100 }, "DATA_SIZE_CLAMPED"),
+            (
+                SmcError::TypeMismatch {
+                    fourcc: 0,
+                    expected: 0,
+                    got: 0,
+                },
+                "TYPE_MISMATCH",
+            ),
+            (
+                SmcError::DataSizeClamped {
+                    fourcc: 0,
+                    reported: 100,
+                },
+                "DATA_SIZE_CLAMPED",
+            ),
             (SmcError::InvalidFloat { fourcc: 0 }, "INVALID_FLOAT"),
             (SmcError::EmptyResponse { fourcc: 0 }, "EMPTY_RESPONSE"),
             (SmcError::AlreadyClosed, "ALREADY_CLOSED"),
@@ -1693,33 +1750,80 @@ mod tests {
             (SmcError::Timeout { retried: false }, "TIMEOUT"),
             (SmcError::AttributeDenied { fourcc: 0 }, "ATTRIBUTE_DENIED"),
             (SmcError::WriteDenied(0), "WRITE_DENIED"),
-            (SmcError::SizeMismatch { fourcc: 0, expected: 4, got: 2 }, "SIZE_MISMATCH"),
-            (SmcError::EndiannessUnplausible { fourcc: 0, got: 0xDEAD }, "ENDIANNESS_UNPLAUSIBLE"),
-            (SmcError::UnlockMismatch { expected: 1, got: 0, session: sid, timestamp_ns: 0 }, "UNLOCK_MISMATCH"),
-            (SmcError::UnlockRejected { result_byte: 0x86, session: sid }, "UNLOCK_REJECTED"),
-            (SmcError::WriteRefused {
-                fourcc: 0x4630_4D64,
-                result_byte: 0x85,
-                context: "fan_mode",
-                session: sid,
-                timestamp_ns: 0,
-            }, "WRITE_REFUSED"),
-            (SmcError::WriteReadbackMismatch {
-                fourcc: 0x4630_5467,
-                expected: [1, 2, 3, 4],
-                expected_len: 4,
-                got: [1, 2, 3, 5],
-                got_len: 4,
-                session: sid,
-                timestamp_ns: 0,
-                iteration: None,
-            }, "WRITE_READBACK_MISMATCH"),
-            (SmcError::WatchdogFired { elapsed_ms: 4200, session: sid }, "WATCHDOG_FIRED"),
-            (SmcError::ConflictDetected {
-                holder_pid: 12345,
-                lockfile_path: "/private/var/run/fand-smc.lock".to_string(),
-            }, "CONFLICT_DETECTED"),
-            (SmcError::EdrDenied { suspected_agent: Some("falcon-sensor".to_string()) }, "EDR_DENIED"),
+            (
+                SmcError::SizeMismatch {
+                    fourcc: 0,
+                    expected: 4,
+                    got: 2,
+                },
+                "SIZE_MISMATCH",
+            ),
+            (
+                SmcError::EndiannessUnplausible {
+                    fourcc: 0,
+                    got: 0xDEAD,
+                },
+                "ENDIANNESS_UNPLAUSIBLE",
+            ),
+            (
+                SmcError::UnlockMismatch {
+                    expected: 1,
+                    got: 0,
+                    session: sid,
+                    timestamp_ns: 0,
+                },
+                "UNLOCK_MISMATCH",
+            ),
+            (
+                SmcError::UnlockRejected {
+                    result_byte: 0x86,
+                    session: sid,
+                },
+                "UNLOCK_REJECTED",
+            ),
+            (
+                SmcError::WriteRefused {
+                    fourcc: 0x4630_4D64,
+                    result_byte: 0x85,
+                    context: "fan_mode",
+                    session: sid,
+                    timestamp_ns: 0,
+                },
+                "WRITE_REFUSED",
+            ),
+            (
+                SmcError::WriteReadbackMismatch {
+                    fourcc: 0x4630_5467,
+                    expected: [1, 2, 3, 4],
+                    expected_len: 4,
+                    got: [1, 2, 3, 5],
+                    got_len: 4,
+                    session: sid,
+                    timestamp_ns: 0,
+                    iteration: None,
+                },
+                "WRITE_READBACK_MISMATCH",
+            ),
+            (
+                SmcError::WatchdogFired {
+                    elapsed_ms: 4200,
+                    session: sid,
+                },
+                "WATCHDOG_FIRED",
+            ),
+            (
+                SmcError::ConflictDetected {
+                    holder_pid: 12345,
+                    lockfile_path: "/private/var/run/fand-smc.lock".to_string(),
+                },
+                "CONFLICT_DETECTED",
+            ),
+            (
+                SmcError::EdrDenied {
+                    suspected_agent: Some("falcon-sensor".to_string()),
+                },
+                "EDR_DENIED",
+            ),
             (SmcError::TccDenied, "TCC_DENIED"),
             (SmcError::LockdownModeSuspected, "LOCKDOWN_MODE_SUSPECTED"),
         ];
@@ -1741,11 +1845,29 @@ mod tests {
             SmcError::ServiceNotFound.error_code(),
             SmcError::OpenFailed(0).error_code(),
             SmcError::OpenTimeout.error_code(),
-            SmcError::CallFailed { selector: 0, kr: 0, cmd: 0 }.error_code(),
-            SmcError::SmcResult { cmd: 0, result_byte: 0 }.error_code(),
+            SmcError::CallFailed {
+                selector: 0,
+                kr: 0,
+                cmd: 0,
+            }
+            .error_code(),
+            SmcError::SmcResult {
+                cmd: 0,
+                result_byte: 0,
+            }
+            .error_code(),
             SmcError::KeyNotFound(0).error_code(),
-            SmcError::TypeMismatch { fourcc: 0, expected: 0, got: 0 }.error_code(),
-            SmcError::DataSizeClamped { fourcc: 0, reported: 0 }.error_code(),
+            SmcError::TypeMismatch {
+                fourcc: 0,
+                expected: 0,
+                got: 0,
+            }
+            .error_code(),
+            SmcError::DataSizeClamped {
+                fourcc: 0,
+                reported: 0,
+            }
+            .error_code(),
             SmcError::InvalidFloat { fourcc: 0 }.error_code(),
             SmcError::EmptyResponse { fourcc: 0 }.error_code(),
             SmcError::AlreadyClosed.error_code(),
@@ -1753,30 +1875,77 @@ mod tests {
             SmcError::Timeout { retried: false }.error_code(),
             SmcError::AttributeDenied { fourcc: 0 }.error_code(),
             SmcError::WriteDenied(0).error_code(),
-            SmcError::SizeMismatch { fourcc: 0, expected: 0, got: 0 }.error_code(),
+            SmcError::SizeMismatch {
+                fourcc: 0,
+                expected: 0,
+                got: 0,
+            }
+            .error_code(),
             SmcError::EndiannessUnplausible { fourcc: 0, got: 0 }.error_code(),
-            SmcError::UnlockMismatch { expected: 0, got: 0, session: sid, timestamp_ns: 0 }.error_code(),
-            SmcError::UnlockRejected { result_byte: 0, session: sid }.error_code(),
-            SmcError::WriteRefused { fourcc: 0, result_byte: 0, context: "x", session: sid, timestamp_ns: 0 }.error_code(),
+            SmcError::UnlockMismatch {
+                expected: 0,
+                got: 0,
+                session: sid,
+                timestamp_ns: 0,
+            }
+            .error_code(),
+            SmcError::UnlockRejected {
+                result_byte: 0,
+                session: sid,
+            }
+            .error_code(),
+            SmcError::WriteRefused {
+                fourcc: 0,
+                result_byte: 0,
+                context: "x",
+                session: sid,
+                timestamp_ns: 0,
+            }
+            .error_code(),
             SmcError::WriteReadbackMismatch {
-                fourcc: 0, expected: [0;4], expected_len: 0, got: [0;4], got_len: 0,
-                session: sid, timestamp_ns: 0, iteration: None,
-            }.error_code(),
-            SmcError::WatchdogFired { elapsed_ms: 0, session: sid }.error_code(),
-            SmcError::ConflictDetected { holder_pid: 0, lockfile_path: String::new() }.error_code(),
-            SmcError::EdrDenied { suspected_agent: None }.error_code(),
+                fourcc: 0,
+                expected: [0; 4],
+                expected_len: 0,
+                got: [0; 4],
+                got_len: 0,
+                session: sid,
+                timestamp_ns: 0,
+                iteration: None,
+            }
+            .error_code(),
+            SmcError::WatchdogFired {
+                elapsed_ms: 0,
+                session: sid,
+            }
+            .error_code(),
+            SmcError::ConflictDetected {
+                holder_pid: 0,
+                lockfile_path: String::new(),
+            }
+            .error_code(),
+            SmcError::EdrDenied {
+                suspected_agent: None,
+            }
+            .error_code(),
             SmcError::TccDenied.error_code(),
             SmcError::LockdownModeSuspected.error_code(),
         ];
         let unique: std::collections::HashSet<_> = codes.iter().copied().collect();
-        assert_eq!(unique.len(), codes.len(), "error_code() mapping must be injective");
+        assert_eq!(
+            unique.len(),
+            codes.len(),
+            "error_code() mapping must be injective"
+        );
     }
 
     #[test]
     fn feature_005_display_contains_session_id() {
         use crate::correlation::SessionId;
         let sid = SessionId::new();
-        let err = SmcError::WatchdogFired { elapsed_ms: 4200, session: sid };
+        let err = SmcError::WatchdogFired {
+            elapsed_ms: 4200,
+            session: sid,
+        };
         let msg = format!("{err}");
         assert!(msg.contains(sid.as_str()), "Display must embed session id");
         assert!(msg.contains("4200"));
@@ -1790,17 +1959,24 @@ mod tests {
         };
         let msg = format!("{err}");
         assert!(msg.contains("99999"));
-        assert!(msg.contains("untrusted"), "Display MUST warn that PID is untrusted (CHK060)");
+        assert!(
+            msg.contains("untrusted"),
+            "Display MUST warn that PID is untrusted (CHK060)"
+        );
     }
 
     #[test]
     fn edr_denied_identifies_agent_when_known() {
-        let err = SmcError::EdrDenied { suspected_agent: Some("CrowdStrike".to_string()) };
+        let err = SmcError::EdrDenied {
+            suspected_agent: Some("CrowdStrike".to_string()),
+        };
         let msg = format!("{err}");
         assert!(msg.contains("CrowdStrike"));
         assert!(msg.contains("EndpointSecurity"));
 
-        let err_none = SmcError::EdrDenied { suspected_agent: None };
+        let err_none = SmcError::EdrDenied {
+            suspected_agent: None,
+        };
         let msg_none = format!("{err_none}");
         assert!(msg_none.contains("agent not identified"));
     }

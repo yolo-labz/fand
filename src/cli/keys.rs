@@ -10,7 +10,7 @@
 
 use std::process::Command;
 
-use crate::smc::enumerate::{Fan, enumerate_fans};
+use crate::smc::enumerate::{enumerate_fans, Fan};
 use crate::smc::ffi::{SmcConnection, SmcError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,7 +36,10 @@ enum Mode {
     ///   --write F0St u8:3
     /// **DEBUG ONLY** — bypasses the WritableKey whitelist. Used by the
     /// project maintainer for keyspace research, NOT for end-user fan control.
-    DebugWrite { fourcc: String, value: String },
+    DebugWrite {
+        fourcc: String,
+        value: String,
+    },
 }
 
 pub fn execute(args: &[String]) {
@@ -77,9 +80,14 @@ fn parse_args(args: &[String]) -> Result<Mode, String> {
                     return Err("--read is mutually exclusive with other modes".into());
                 }
                 i += 1;
-                let v = args.get(i).ok_or_else(|| "--read requires a 4-character fourcc".to_string())?;
+                let v = args
+                    .get(i)
+                    .ok_or_else(|| "--read requires a 4-character fourcc".to_string())?;
                 if v.as_bytes().len() != 4 {
-                    return Err(format!("--read fourcc must be exactly 4 bytes, got {}", v.len()));
+                    return Err(format!(
+                        "--read fourcc must be exactly 4 bytes, got {}",
+                        v.len()
+                    ));
                 }
                 mode = Mode::Read(v.clone());
             }
@@ -93,7 +101,10 @@ fn parse_args(args: &[String]) -> Result<Mode, String> {
                     .ok_or_else(|| "--write requires <fourcc> <type:value>".to_string())?
                     .clone();
                 if fourcc.as_bytes().len() != 4 {
-                    return Err(format!("--write fourcc must be 4 bytes, got {}", fourcc.len()));
+                    return Err(format!(
+                        "--write fourcc must be 4 bytes, got {}",
+                        fourcc.len()
+                    ));
                 }
                 i += 1;
                 let value = args
@@ -167,7 +178,11 @@ fn run_debug_open() -> u8 {
         }
         Err(e) => {
             eprintln!("fand keys --debug-open: {e}");
-            if matches!(e, SmcError::OpenFailed(_)) { 1 } else { 2 }
+            if matches!(e, SmcError::OpenFailed(_)) {
+                1
+            } else {
+                2
+            }
         }
     }
 }
@@ -194,7 +209,10 @@ fn run_all_fan_keys() -> u8 {
     println!("fand keys --all — {key_count} keys in SMC keyspace");
     println!("filtering to F-prefixed keys (fan-related)");
     println!();
-    println!("  {:<8} {:<8} {:<10} {:<12} {}", "idx", "fourcc", "data_type", "data_size", "attributes");
+    println!(
+        "  {:<8} {:<8} {:<10} {:<12} {}",
+        "idx", "fourcc", "data_type", "data_size", "attributes"
+    );
 
     let mut f_count = 0u32;
     let mut errors = 0u32;
@@ -298,8 +316,10 @@ fn run_debug_write(fourcc_str: &str, value_str: &str) -> u8 {
             }
         },
         "hex" => {
-            let cleaned: String =
-                raw_value.chars().filter(|c| !c.is_ascii_whitespace()).collect();
+            let cleaned: String = raw_value
+                .chars()
+                .filter(|c| !c.is_ascii_whitespace())
+                .collect();
             if cleaned.len() % 2 != 0 {
                 eprintln!("fand keys --write: hex must have even number of chars");
                 return 64;
@@ -431,10 +451,7 @@ fn run_read_key(fourcc_str: &str) -> u8 {
             match conn.read_key(fourcc) {
                 Ok((_info, raw)) => {
                     let valid_len = (info.data_size as usize).min(raw.len());
-                    println!(
-                        "  raw  = {:02X?}",
-                        &raw[..valid_len]
-                    );
+                    println!("  raw  = {:02X?}", &raw[..valid_len]);
                     // Also attempt decoding as u16/u32 from both endiannesses.
                     if valid_len == 2 {
                         let be = u16::from_be_bytes([raw[0], raw[1]]);
@@ -606,4 +623,3 @@ fn sysctl_string(key: &str) -> Option<String> {
     }
     String::from_utf8(out.stdout).ok()
 }
-

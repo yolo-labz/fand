@@ -28,13 +28,7 @@ pub const DEFAULT_LOCKFILE_PATH: &str = "/var/run/fand-smc.lock";
 
 /// Filesystems where `flock` is unreliable or unsupported. fand refuses to
 /// start if the lockfile parent would land on one of these.
-const FLOCK_UNRELIABLE_FS: &[&[u8]] = &[
-    b"nfs",
-    b"smbfs",
-    b"msdos",
-    b"exfat",
-    b"cd9660",
-];
+const FLOCK_UNRELIABLE_FS: &[&[u8]] = &[b"nfs", b"smbfs", b"msdos", b"exfat", b"cd9660"];
 
 /// RAII guard over the exclusive single-instance lockfile.
 ///
@@ -86,8 +80,8 @@ impl FlockGuard {
         let parent = std::path::Path::new(path)
             .parent()
             .unwrap_or_else(|| std::path::Path::new("/"));
-        let canonical_parent = std::fs::canonicalize(parent)
-            .map_err(FlockError::CanonicalizationFailed)?;
+        let canonical_parent =
+            std::fs::canonicalize(parent).map_err(FlockError::CanonicalizationFailed)?;
 
         // Step 2: statfs the canonical parent and reject unreliable filesystems
         // (FR-102 / CHK058).
@@ -95,24 +89,24 @@ impl FlockGuard {
 
         // Step 3: reconstruct the canonical lockfile path as
         // `canonical_parent/<basename>`.
-        let basename = std::path::Path::new(path)
-            .file_name()
-            .ok_or_else(|| FlockError::CreateFailed(std::io::Error::new(
+        let basename = std::path::Path::new(path).file_name().ok_or_else(|| {
+            FlockError::CreateFailed(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "lockfile path has no basename",
-            )))?;
+            ))
+        })?;
         let canonical_path = canonical_parent.join(basename);
 
         // Step 4: open with O_CREAT | O_WRONLY | O_NOFOLLOW, mode 0600
         // (CHK055, CHK056). Use raw libc::open because std::fs::OpenOptions
         // does not expose O_NOFOLLOW on all platforms.
-        let c_path = std::ffi::CString::new(
-            canonical_path.as_os_str().as_encoded_bytes(),
-        )
-        .map_err(|e| FlockError::CreateFailed(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            format!("lockfile path contains NUL: {e}"),
-        )))?;
+        let c_path = std::ffi::CString::new(canonical_path.as_os_str().as_encoded_bytes())
+            .map_err(|e| {
+                FlockError::CreateFailed(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    format!("lockfile path contains NUL: {e}"),
+                ))
+            })?;
 
         // SAFETY: c_path is a valid null-terminated C string owned by this scope.
         // The open flags are well-formed per POSIX. The mode 0o600 is a literal.
@@ -142,10 +136,10 @@ impl FlockGuard {
             // Read the PID content for the diagnostic (treated as untrusted).
             let holder_pid = Self::read_holder_pid_from_path(&canonical_path);
             drop(file); // release fd
-            // Any error from try_lock_exclusive is treated as "already held"
-            // for diagnostic purposes — the only realistic error kinds are
-            // WouldBlock (EWOULDBLOCK) and filesystem-level issues which are
-            // rare on local APFS.
+                        // Any error from try_lock_exclusive is treated as "already held"
+                        // for diagnostic purposes — the only realistic error kinds are
+                        // WouldBlock (EWOULDBLOCK) and filesystem-level issues which are
+                        // rare on local APFS.
             let _ = e;
             return Err(FlockError::AlreadyHeld { holder_pid });
         }
@@ -177,9 +171,7 @@ impl FlockGuard {
     fn check_filesystem(parent: &std::path::Path) -> Result<(), FlockError> {
         #[cfg(target_os = "macos")]
         unsafe {
-            let c_parent = match std::ffi::CString::new(
-                parent.as_os_str().as_encoded_bytes(),
-            ) {
+            let c_parent = match std::ffi::CString::new(parent.as_os_str().as_encoded_bytes()) {
                 Ok(s) => s,
                 Err(_) => return Ok(()), // path contains NUL — fall through, open will fail later
             };
@@ -265,7 +257,9 @@ mod tests {
         let pid = std::process::id();
         let nonce = {
             let mut buf = [0u8; 8];
-            unsafe { libc::getentropy(buf.as_mut_ptr().cast(), buf.len()); }
+            unsafe {
+                libc::getentropy(buf.as_mut_ptr().cast(), buf.len());
+            }
             u64::from_ne_bytes(buf)
         };
         dir.join(format!("{pid}-{nonce:016x}-{name}"))

@@ -123,7 +123,10 @@ impl SelftestReport {
 
         let overall_result = if total_mismatches > 0 {
             SelftestResult::Fail
-        } else if per_fan.iter().any(|f| f.result == SelftestResult::Inconclusive) {
+        } else if per_fan
+            .iter()
+            .any(|f| f.result == SelftestResult::Inconclusive)
+        {
             SelftestResult::Inconclusive
         } else if per_fan.iter().all(|f| f.result == SelftestResult::Pass) {
             SelftestResult::Pass
@@ -216,7 +219,10 @@ pub fn classify_fan(
     samples: Vec<IterationSample>,
 ) -> SelftestFanReport {
     let all_min: Vec<f32> = samples.iter().flat_map(|s| s.min_samples.clone()).collect();
-    let all_auto: Vec<f32> = samples.iter().flat_map(|s| s.auto_samples.clone()).collect();
+    let all_auto: Vec<f32> = samples
+        .iter()
+        .flat_map(|s| s.auto_samples.clone())
+        .collect();
     let median_actual_at_min = median_f32(&all_min);
     let median_actual_at_auto = median_f32(&all_auto);
     let delta_rpm = median_actual_at_auto - median_actual_at_min;
@@ -275,12 +281,19 @@ mod tests {
     #[test]
     fn median_handles_outlier() {
         // Median is robust to a single outlier; mean would be skewed.
-        assert_eq!(median_f32(&[2300.0, 2310.0, 2320.0, 2330.0, 9999.0]), 2320.0);
+        assert_eq!(
+            median_f32(&[2300.0, 2310.0, 2320.0, 2330.0, 9999.0]),
+            2320.0
+        );
     }
 
     #[test]
     fn classify_iteration_computes_delta() {
-        let s = classify_iteration(0, vec![5000.0, 5100.0, 4900.0], vec![2300.0, 2320.0, 2310.0]);
+        let s = classify_iteration(
+            0,
+            vec![5000.0, 5100.0, 4900.0],
+            vec![2300.0, 2320.0, 2310.0],
+        );
         assert_eq!(s.iteration, 0);
         assert_eq!(s.auto_median, 5000.0);
         assert_eq!(s.min_median, 2310.0);
@@ -370,8 +383,7 @@ mod tests {
             0,
             vec![classify_iteration(0, vec![2400.0], vec![2300.0])],
         );
-        let report =
-            SelftestReport::classify(vec![pass, inconclusive], Duration::from_secs(15));
+        let report = SelftestReport::classify(vec![pass, inconclusive], Duration::from_secs(15));
         assert_eq!(report.overall_result, SelftestResult::Inconclusive);
     }
 }

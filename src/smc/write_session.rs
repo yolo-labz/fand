@@ -36,18 +36,18 @@
 
 #![allow(clippy::missing_errors_doc)]
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread::JoinHandle;
 
 use crate::correlation::SessionId;
-use crate::smc::enumerate::{Fan, enumerate_fans};
+use crate::smc::enumerate::{enumerate_fans, Fan};
 use crate::smc::ffi::{SmcConnection, SmcError};
 use crate::smc::keys::WritableKey;
 use crate::smc::panic_hook::{install_panic_hook, seal_for_panic};
 use crate::smc::round_trip::RoundTripRing;
 use crate::smc::signal::{
-    SignalThreadState, block_signals_on_non_signal_threads, spawn_signal_thread,
+    block_signals_on_non_signal_threads, spawn_signal_thread, SignalThreadState,
 };
 use crate::smc::single_instance::FlockGuard;
 use crate::smc::unlock::DiagnosticUnlockSession;
@@ -253,9 +253,12 @@ impl WriteSession {
     ) -> Result<(), SmcError> {
         let fan_idx_usize = usize::from(fan_index);
         if fan_idx_usize >= self.fan_envelopes.len() {
-            return Err(SmcError::KeyNotFound(
-                u32::from_be_bytes([b'F', b'0' + fan_index, b'T', b'g']),
-            ));
+            return Err(SmcError::KeyNotFound(u32::from_be_bytes([
+                b'F',
+                b'0' + fan_index,
+                b'T',
+                b'g',
+            ])));
         }
 
         // Step 1: acquire the diagnostic unlock if we don't already have one.
@@ -268,8 +271,7 @@ impl WriteSession {
         // Build F<i>Ac fourcc on the fly; the read is informational because
         // the operator's commanded target takes precedence over any seed.
         let _actual_rpm_for_diag = {
-            let actual_key =
-                u32::from_be_bytes([b'F', b'0' + fan_index, b'A', b'c']);
+            let actual_key = u32::from_be_bytes([b'F', b'0' + fan_index, b'A', b'c']);
             self.conn.read_f32(actual_key).unwrap_or(0.0)
         };
 
@@ -395,14 +397,13 @@ impl WriteSession {
             }
 
             // Record the round-trip in the ring.
-            self.round_trips.push(
-                crate::smc::round_trip::RoundTripRecord::new_match(
+            self.round_trips
+                .push(crate::smc::round_trip::RoundTripRecord::new_match(
                     crate::smc::write_session::wall_clock_ns(),
                     u32::from_be_bytes(*b"Ftst"),
                     &[1],
                     &[1],
-                ),
-            );
+                ));
         }
 
         // Install the DiagnosticUnlockSession (watchdog state machine + thread).
@@ -452,10 +453,10 @@ impl WriteSession {
         &mut self,
         iterations: u8,
     ) -> Result<crate::smc::selftest::SelftestReport, SmcError> {
-        use crate::smc::selftest::{
-            SelftestFanReport, classify_fan, classify_iteration, hold_and_sample,
-        };
         use crate::smc::keys::WritableKey;
+        use crate::smc::selftest::{
+            classify_fan, classify_iteration, hold_and_sample, SelftestFanReport,
+        };
 
         let session_id = self.session_id;
         let started_at = std::time::Instant::now();
@@ -494,9 +495,7 @@ impl WriteSession {
                 }
 
                 // Step B: sample F0Ac during the hold window.
-                let min_samples = hold_and_sample(|| {
-                    self.conn.read_f32(actual_key).unwrap_or(0.0)
-                });
+                let min_samples = hold_and_sample(|| self.conn.read_f32(actual_key).unwrap_or(0.0));
 
                 // Step C: return to auto (F0md=0).
                 if let Err(e) = self.conn.write_u8_verified(
@@ -517,15 +516,10 @@ impl WriteSession {
                 }
 
                 // Step D: sample F0Ac during the auto-hold window.
-                let auto_samples = hold_and_sample(|| {
-                    self.conn.read_f32(actual_key).unwrap_or(0.0)
-                });
+                let auto_samples =
+                    hold_and_sample(|| self.conn.read_f32(actual_key).unwrap_or(0.0));
 
-                samples_per_iteration.push(classify_iteration(
-                    iter,
-                    auto_samples,
-                    min_samples,
-                ));
+                samples_per_iteration.push(classify_iteration(iter, auto_samples, min_samples));
                 iterations_completed = iterations_completed.saturating_add(1);
             }
 
@@ -664,7 +658,9 @@ impl WriteSession {
             },
             FlockError::UnreliableFilesystem(fs) => SmcError::ConflictDetected {
                 holder_pid: 0,
-                lockfile_path: format!("{path} (refused — filesystem '{fs}' unreliable for flock, FR-102)"),
+                lockfile_path: format!(
+                    "{path} (refused — filesystem '{fs}' unreliable for flock, FR-102)"
+                ),
             },
             FlockError::CreateFailed(io) => {
                 // Permission-denied is the common path for "not root" — map
@@ -706,7 +702,10 @@ mod tests {
         });
         assert!(matches!(
             err,
-            SmcError::ConflictDetected { holder_pid: 1234, .. }
+            SmcError::ConflictDetected {
+                holder_pid: 1234,
+                ..
+            }
         ));
         assert_eq!(err.error_code(), "CONFLICT_DETECTED");
     }
@@ -722,9 +721,9 @@ mod tests {
     #[test]
     fn flock_nfs_rejection_maps_to_conflict() {
         use crate::smc::single_instance::FlockError;
-        let err = WriteSession::flock_error_to_smc_error(
-            FlockError::UnreliableFilesystem("nfs".to_string()),
-        );
+        let err = WriteSession::flock_error_to_smc_error(FlockError::UnreliableFilesystem(
+            "nfs".to_string(),
+        ));
         let msg = format!("{err}");
         assert!(msg.contains("nfs"));
         assert!(msg.contains("unreliable") || msg.contains("FR-102"));

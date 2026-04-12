@@ -76,7 +76,13 @@ pub struct FanControlState {
 
 impl FanControlState {
     #[must_use]
-    pub fn new(fan_index: u8, min_rpm: f32, max_rpm: f32, initial_actual_rpm: f32, initial_temp: f32) -> Self {
+    pub fn new(
+        fan_index: u8,
+        min_rpm: f32,
+        max_rpm: f32,
+        initial_actual_rpm: f32,
+        initial_temp: f32,
+    ) -> Self {
         Self {
             fan_index,
             active: false,
@@ -137,11 +143,8 @@ impl FanControlState {
         }
 
         // Stage 3: EMA
-        self.driver_temp_smoothed = ema::smooth(
-            self.driver_temp_smoothed,
-            self.driver_temp_raw,
-            alpha,
-        );
+        self.driver_temp_smoothed =
+            ema::smooth(self.driver_temp_smoothed, self.driver_temp_raw, alpha);
 
         // Stage 4: Curve eval
         let curve_rpm = curve::evaluate(breakpoints, self.driver_temp_smoothed);

@@ -187,7 +187,11 @@ mod tests {
             }
             let encoded = encode_flt(val).expect("encode");
             let decoded = decode_flt(&encoded, 4).expect("decode");
-            assert_eq!(decoded.to_bits(), val.to_bits(), "round-trip failed for bits {bits:#010X}");
+            assert_eq!(
+                decoded.to_bits(),
+                val.to_bits(),
+                "round-trip failed for bits {bits:#010X}"
+            );
         }
     }
 }

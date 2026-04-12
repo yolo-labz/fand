@@ -106,15 +106,24 @@ mod tests {
     fn hysteresis_prevents_rapid_toggle() {
         let mut a = AppleSiliconAdapter::new();
         // Engage
-        assert_eq!(a.decide(2400.0, MIN, MAX), AppleSiliconDecision::ForcedMinimum);
+        assert_eq!(
+            a.decide(2400.0, MIN, MAX),
+            AppleSiliconDecision::ForcedMinimum
+        );
         // Between 5% and 10% — stays forced minimum due to disengage hysteresis
-        assert_eq!(a.decide(2600.0, MIN, MAX), AppleSiliconDecision::ForcedMinimum);
+        assert_eq!(
+            a.decide(2600.0, MIN, MAX),
+            AppleSiliconDecision::ForcedMinimum
+        );
         // Above 10% — disengages
         assert_eq!(a.decide(2800.0, MIN, MAX), AppleSiliconDecision::Auto);
         // Back between 5% and 10% — stays auto due to engage hysteresis
         assert_eq!(a.decide(2600.0, MIN, MAX), AppleSiliconDecision::Auto);
         // Below 5% — engages again
-        assert_eq!(a.decide(2400.0, MIN, MAX), AppleSiliconDecision::ForcedMinimum);
+        assert_eq!(
+            a.decide(2400.0, MIN, MAX),
+            AppleSiliconDecision::ForcedMinimum
+        );
     }
 
     #[test]

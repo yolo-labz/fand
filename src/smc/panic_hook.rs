@@ -29,8 +29,8 @@
 #![allow(clippy::missing_safety_doc)]
 
 use core::fmt::{self, Write as FmtWrite};
-use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 
 use crate::smc::ffi::SmcConnection;
 
@@ -226,8 +226,7 @@ mod tests {
         // NOTE: this test does NOT actually panic — it just checks the
         // guard atomic initial state. Installing the hook in a test would
         // interfere with the test harness's own panic reporting.
-        let _ = PANIC_HOOK_ACTIVE.compare_exchange(
-            false, false, Ordering::AcqRel, Ordering::Acquire,
-        );
+        let _ =
+            PANIC_HOOK_ACTIVE.compare_exchange(false, false, Ordering::AcqRel, Ordering::Acquire);
     }
 }

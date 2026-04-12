@@ -39,8 +39,8 @@
 #![allow(unsafe_code)] // pthread_sigmask FFI
 #![allow(clippy::missing_errors_doc)]
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread::JoinHandle;
 
 use crate::smc::ffi::SmcConnection;
@@ -148,17 +148,16 @@ pub fn spawn_signal_thread(
             // delivered HERE rather than to a GCD worker.
             unblock_signals_on_this_thread();
 
-            let mut sigs = match signal_hook::iterator::Signals::new([
-                SIG_TERM, SIG_INT, SIG_HUP, SIG_INFO,
-            ]) {
-                Ok(s) => s,
-                Err(_) => {
-                    // If signal-hook cannot register, we cannot proceed.
-                    // Log to stderr and exit with the general error code.
-                    emit_stderr(b"fand: signal-hook registration failed\n");
-                    return;
-                }
-            };
+            let mut sigs =
+                match signal_hook::iterator::Signals::new([SIG_TERM, SIG_INT, SIG_HUP, SIG_INFO]) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        // If signal-hook cannot register, we cannot proceed.
+                        // Log to stderr and exit with the general error code.
+                        emit_stderr(b"fand: signal-hook registration failed\n");
+                        return;
+                    }
+                };
 
             for sig in sigs.forever() {
                 match sig {

@@ -20,8 +20,8 @@
 
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
 use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 fn fand_binary() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_fand"))
@@ -108,7 +108,8 @@ fn fand_set_watchdog_fires() {
 
     let code = output.status.code().expect("expected exit code");
     assert_eq!(
-        code, 4,
+        code,
+        4,
         "watchdog fire should exit with code 4 — got {code}\nstderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );

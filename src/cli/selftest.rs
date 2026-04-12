@@ -20,8 +20,8 @@
 use crate::cli::parse::parse_fan_index;
 use crate::smc::ffi::SmcError;
 use crate::smc::selftest::{
-    DEFAULT_ITERATIONS, DELTA_THRESHOLD_RPM, SAMPLES_PER_HOLD, SelftestFanReport,
-    SelftestReport, SelftestResult,
+    SelftestFanReport, SelftestReport, SelftestResult, DEFAULT_ITERATIONS, DELTA_THRESHOLD_RPM,
+    SAMPLES_PER_HOLD,
 };
 use crate::smc::write_session::WriteSession;
 
@@ -123,7 +123,9 @@ fn parse_args(args: &[String]) -> Result<CliSelftestArgs, String> {
         match args[i].as_str() {
             "--fan" => {
                 i += 1;
-                let v = args.get(i).ok_or_else(|| "--fan requires a value".to_string())?;
+                let v = args
+                    .get(i)
+                    .ok_or_else(|| "--fan requires a value".to_string())?;
                 target_fan = Some(parse_fan_index(v).map_err(|e| format!("--fan: {e}"))?);
             }
             "--iterations" => {
@@ -148,7 +150,11 @@ fn parse_args(args: &[String]) -> Result<CliSelftestArgs, String> {
         i += 1;
     }
 
-    Ok(CliSelftestArgs { target_fan, iterations, json_output })
+    Ok(CliSelftestArgs {
+        target_fan,
+        iterations,
+        json_output,
+    })
 }
 
 fn print_human(report: &SelftestReport) {
@@ -190,7 +196,11 @@ fn print_human_fan(fan: &SelftestFanReport) {
         "  median @ auto:     {:.1} RPM  (target: F0md=0, system controlled)",
         fan.median_actual_at_auto
     );
-    let delta_marker = if fan.delta_rpm >= DELTA_THRESHOLD_RPM { "✓" } else { "✗" };
+    let delta_marker = if fan.delta_rpm >= DELTA_THRESHOLD_RPM {
+        "✓"
+    } else {
+        "✗"
+    };
     println!(
         "  delta:             {:.1} RPM  {}  (>= {} required)",
         fan.delta_rpm, delta_marker, DELTA_THRESHOLD_RPM as i32
@@ -255,7 +265,10 @@ fn print_json(session: &WriteSession, report: &SelftestReport) {
         print!(r#""round_trip_count":{},"#, fan.round_trip_count);
         print!(r#""mismatch_count":{},"#, fan.mismatch_count);
         print!(r#""median_actual_at_min":{:.1},"#, fan.median_actual_at_min);
-        print!(r#""median_actual_at_auto":{:.1},"#, fan.median_actual_at_auto);
+        print!(
+            r#""median_actual_at_auto":{:.1},"#,
+            fan.median_actual_at_auto
+        );
         print!(r#""delta_rpm":{:.1},"#, fan.delta_rpm);
         print!(r#""result":"{}""#, fan.result.as_str());
         print!("}}");

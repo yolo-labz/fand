@@ -26,8 +26,8 @@ const ALLOWLIST: &[&str] = &[
     "SUDO_COMMAND",
     "TERM",
     "SHELL",
-    "FAND_SAFE_MIN_RPM",       // FR-063 opt-in safe-min override
-    "FAND_ALLOW_TMP_CONFIG",   // FR-071 dev/testing bypass for /tmp config path check
+    "FAND_SAFE_MIN_RPM",     // FR-063 opt-in safe-min override
+    "FAND_ALLOW_TMP_CONFIG", // FR-071 dev/testing bypass for /tmp config path check
 ];
 
 /// Scrub the process environment against the allowlist (FR-061).
@@ -39,9 +39,7 @@ const ALLOWLIST: &[&str] = &[
 ///
 /// Never. `std::env::vars` + `std::env::remove_var` are infallible.
 pub fn scrub_env() {
-    let snapshot: Vec<String> = std::env::vars()
-        .map(|(k, _)| k)
-        .collect();
+    let snapshot: Vec<String> = std::env::vars().map(|(k, _)| k).collect();
     for name in snapshot {
         if !ALLOWLIST.iter().any(|allowed| *allowed == name.as_str()) {
             std::env::remove_var(&name);

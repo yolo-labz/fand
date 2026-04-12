@@ -29,9 +29,7 @@ pub fn validate(config: &Config) -> Vec<ValidationError> {
         "error" | "warn" | "info" | "debug" => {}
         other => {
             errors.push(ValidationError::MissingRequired {
-                field: format!(
-                    "log_level must be error|warn|info|debug, got '{other}'"
-                ),
+                field: format!("log_level must be error|warn|info|debug, got '{other}'"),
                 fan_index: None,
             });
         }
@@ -195,7 +193,9 @@ mod tests {
         f2.index = 0; // duplicate
         c.fan.push(f2);
         let errs = validate(&c);
-        assert!(errs.iter().any(|e| matches!(e, ValidationError::DuplicateFanIndex { .. })));
+        assert!(errs
+            .iter()
+            .any(|e| matches!(e, ValidationError::DuplicateFanIndex { .. })));
     }
 
     #[test]
@@ -203,7 +203,9 @@ mod tests {
         let mut c = minimal_config();
         c.fan[0].curve = vec![(50.0, 2317)];
         let errs = validate(&c);
-        assert!(errs.iter().any(|e| matches!(e, ValidationError::CurveTooShort { .. })));
+        assert!(errs
+            .iter()
+            .any(|e| matches!(e, ValidationError::CurveTooShort { .. })));
     }
 
     #[test]
@@ -211,7 +213,9 @@ mod tests {
         let mut c = minimal_config();
         c.fan[0].curve = vec![(80.0, 6550), (50.0, 2317)];
         let errs = validate(&c);
-        assert!(errs.iter().any(|e| matches!(e, ValidationError::NonMonotoneTemp { .. })));
+        assert!(errs
+            .iter()
+            .any(|e| matches!(e, ValidationError::NonMonotoneTemp { .. })));
     }
 
     #[test]
@@ -243,7 +247,9 @@ mod tests {
         let mut c = minimal_config();
         c.fan[0].sensors.clear();
         let errs = validate(&c);
-        assert!(errs.iter().any(|e| matches!(e, ValidationError::EmptySensors { .. })));
+        assert!(errs
+            .iter()
+            .any(|e| matches!(e, ValidationError::EmptySensors { .. })));
     }
 
     #[test]
@@ -251,7 +257,9 @@ mod tests {
         let mut c = minimal_config();
         c.fan[0].sensors = vec![SensorRef::Name("TooLong".into())];
         let errs = validate(&c);
-        assert!(errs.iter().any(|e| matches!(e, ValidationError::UnknownSensor { .. })));
+        assert!(errs
+            .iter()
+            .any(|e| matches!(e, ValidationError::UnknownSensor { .. })));
     }
 
     #[test]

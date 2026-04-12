@@ -96,7 +96,13 @@ pub fn rate_limited_emit(site_hash: usize, level: LogLevel, msg: &str) {
             msg
         );
     } else {
-        let _ = writeln!(stderr, "[{:.1}s] {} {}", elapsed_secs(), level.as_str(), msg);
+        let _ = writeln!(
+            stderr,
+            "[{:.1}s] {} {}",
+            elapsed_secs(),
+            level.as_str(),
+            msg
+        );
     }
 }
 
@@ -114,7 +120,13 @@ pub fn emit_raw(level: LogLevel, msg: &str) {
         return;
     }
     let mut stderr = std::io::stderr().lock();
-    let _ = writeln!(stderr, "[{:.1}s] {} {}", elapsed_secs(), level.as_str(), msg);
+    let _ = writeln!(
+        stderr,
+        "[{:.1}s] {} {}",
+        elapsed_secs(),
+        level.as_str(),
+        msg
+    );
 }
 
 #[macro_export]

@@ -41,17 +41,17 @@ fn evaluate(breakpoints: &[(f32, u32)], temp: f32) -> f32 {
 
 fn arb_breakpoints() -> impl Strategy<Value = Vec<(f32, u32)>> {
     // Generate 2-10 breakpoints with strictly increasing temps.
-    (2..=10usize).prop_flat_map(|n| {
-        prop::collection::vec((0.0f32..150.0f32, 0u32..10000u32), n)
-    }).prop_map(|mut bps| {
-        // Sort by temp and deduplicate.
-        bps.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
-        bps.dedup_by(|a, b| (a.0 - b.0).abs() < 0.1);
-        if bps.len() < 2 {
-            bps = vec![(40.0, 1000), (90.0, 6000)];
-        }
-        bps
-    })
+    (2..=10usize)
+        .prop_flat_map(|n| prop::collection::vec((0.0f32..150.0f32, 0u32..10000u32), n))
+        .prop_map(|mut bps| {
+            // Sort by temp and deduplicate.
+            bps.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+            bps.dedup_by(|a, b| (a.0 - b.0).abs() < 0.1);
+            if bps.len() < 2 {
+                bps = vec![(40.0, 1000), (90.0, 6000)];
+            }
+            bps
+        })
 }
 
 proptest! {

@@ -90,7 +90,11 @@ fn execute_dry_run(
 ) {
     crate::log::emit_raw(
         crate::log::LogLevel::Info,
-        &format!("fand {} dry-run starting (session {})", env!("CARGO_PKG_VERSION"), session_id.as_str()),
+        &format!(
+            "fand {} dry-run starting (session {})",
+            env!("CARGO_PKG_VERSION"),
+            session_id.as_str()
+        ),
     );
 
     // In dry-run mode, we don't need root / SMC write access.
@@ -108,7 +112,11 @@ fn execute_dry_run(
 
     let poll_interval = Duration::from_millis(u64::from(config.poll_interval_ms));
     let mut tick_number: u64 = 0;
-    let mut adapters: Vec<AppleSiliconAdapter> = config.fan.iter().map(|_| AppleSiliconAdapter::new()).collect();
+    let mut adapters: Vec<AppleSiliconAdapter> = config
+        .fan
+        .iter()
+        .map(|_| AppleSiliconAdapter::new())
+        .collect();
 
     loop {
         let tick_start = Instant::now();
@@ -131,7 +139,9 @@ fn execute_dry_run(
             let adapter = adapters.get_mut(fan_idx);
             let mode_str = if let Some(a) = adapter {
                 match a.decide(clamped.as_f32(), 1300.0, 6550.0) {
-                    crate::control::adapter::AppleSiliconDecision::ForcedMinimum => "forced_minimum",
+                    crate::control::adapter::AppleSiliconDecision::ForcedMinimum => {
+                        "forced_minimum"
+                    }
                     crate::control::adapter::AppleSiliconDecision::Auto => "auto",
                 }
             } else {
@@ -246,13 +256,17 @@ fn execute_commit(
     session_id: SessionId,
 ) {
     use crate::control::adapter::AppleSiliconAdapter;
-    use crate::control::r#loop::FanControlState;
     use crate::control::fusion::FusionMode;
+    use crate::control::r#loop::FanControlState;
     use crate::smc::write_session::WriteSession;
 
     crate::log::emit_raw(
         crate::log::LogLevel::Info,
-        &format!("fand {} commit mode starting (session {})", env!("CARGO_PKG_VERSION"), session_id.as_str()),
+        &format!(
+            "fand {} commit mode starting (session {})",
+            env!("CARGO_PKG_VERSION"),
+            session_id.as_str()
+        ),
     );
 
     // FR-048: acquire WriteSession (flock, signal thread, panic hook, watchdog).
@@ -262,7 +276,8 @@ fn execute_commit(
             eprintln!("fand run: {e}");
             match &e {
                 crate::smc::ffi::SmcError::ConflictDetected { .. } => std::process::exit(5),
-                crate::smc::ffi::SmcError::OpenFailed(_) | crate::smc::ffi::SmcError::ServiceNotFound => {
+                crate::smc::ffi::SmcError::OpenFailed(_)
+                | crate::smc::ffi::SmcError::ServiceNotFound => {
                     eprintln!("  hint: run as root (sudo fand run ...)");
                     std::process::exit(2);
                 }
@@ -273,7 +288,10 @@ fn execute_commit(
 
     crate::log::emit_raw(
         crate::log::LogLevel::Info,
-        &format!("WriteSession acquired, {} fans enumerated", session.fan_count()),
+        &format!(
+            "WriteSession acquired, {} fans enumerated",
+            session.fan_count()
+        ),
     );
 
     // Build per-fan control state using the existing FanControlState from loop.rs.
@@ -282,16 +300,20 @@ fn execute_commit(
     let mut adapters: Vec<AppleSiliconAdapter> = Vec::new();
 
     // Collect fan envelopes upfront to avoid borrow conflicts with the session.
-    let fan_envelopes: Vec<(u8, f32, f32)> = config.fan.iter().map(|fc| {
-        let idx = fc.index;
-        match session.fan_envelope(idx) {
-            Some(e) => (idx, e.min_rpm, e.max_rpm),
-            None => {
-                eprintln!("fand run: fan index {idx} not found on this machine");
-                std::process::exit(1);
+    let fan_envelopes: Vec<(u8, f32, f32)> = config
+        .fan
+        .iter()
+        .map(|fc| {
+            let idx = fc.index;
+            match session.fan_envelope(idx) {
+                Some(e) => (idx, e.min_rpm, e.max_rpm),
+                None => {
+                    eprintln!("fand run: fan index {idx} not found on this machine");
+                    std::process::exit(1);
+                }
             }
-        }
-    }).collect();
+        })
+        .collect();
 
     for (i, fan_cfg) in config.fan.iter().enumerate() {
         let (idx, min_rpm, max_rpm) = fan_envelopes[i];
@@ -306,7 +328,11 @@ fn execute_commit(
 
     crate::log::emit_raw(
         crate::log::LogLevel::Info,
-        &format!("tick loop starting, poll_interval={}ms, {} fans", config.poll_interval_ms, fan_states.len()),
+        &format!(
+            "tick loop starting, poll_interval={}ms, {} fans",
+            config.poll_interval_ms,
+            fan_states.len()
+        ),
     );
 
     // FR-033: single-threaded tick loop.
@@ -329,20 +355,30 @@ fn execute_commit(
             };
 
             // Stage 1: read sensors.
-            let sensor_values: Vec<f32> = fan_cfg.sensors.iter().map(|s| {
-                let name = match s {
-                    crate::config::schema::SensorRef::Name(n) => n.as_str(),
-                    crate::config::schema::SensorRef::Smc { smc } => smc.as_str(),
-                };
-                if name.len() != 4 { return f32::NAN; }
-                let bytes = name.as_bytes();
-                let fourcc = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-                session.connection_mut().read_f32(fourcc).unwrap_or(f32::NAN)
-            }).collect();
+            let sensor_values: Vec<f32> = fan_cfg
+                .sensors
+                .iter()
+                .map(|s| {
+                    let name = match s {
+                        crate::config::schema::SensorRef::Name(n) => n.as_str(),
+                        crate::config::schema::SensorRef::Smc { smc } => smc.as_str(),
+                    };
+                    if name.len() != 4 {
+                        return f32::NAN;
+                    }
+                    let bytes = name.as_bytes();
+                    let fourcc = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                    session
+                        .connection_mut()
+                        .read_f32(fourcc)
+                        .unwrap_or(f32::NAN)
+                })
+                .collect();
 
-            let dropouts: Vec<bool> = sensor_values.iter().map(|&v| {
-                !v.is_finite() || v < 0.0 || v > 150.0
-            }).collect();
+            let dropouts: Vec<bool> = sensor_values
+                .iter()
+                .map(|&v| !v.is_finite() || v < 0.0 || v > 150.0)
+                .collect();
 
             let fusion_mode = FusionMode::from_str_lossy(&fan_cfg.fusion);
             let actual_dt = tick_start.elapsed().as_secs_f32().max(0.001);
@@ -376,7 +412,10 @@ fn execute_commit(
             if let Err(e) = session.commit_set_fan(fan_cfg.index, clamped_rpm) {
                 crate::log::emit_raw(
                     crate::log::LogLevel::Error,
-                    &format!("tick {tick_number} fan {}: write failed: {e}", fan_cfg.index),
+                    &format!(
+                        "tick {tick_number} fan {}: write failed: {e}",
+                        fan_cfg.index
+                    ),
                 );
                 // On write error, teardown is handled by the session's
                 // Drop impl / signal thread.
@@ -413,7 +452,10 @@ fn execute_commit(
         if tick_elapsed > poll_interval {
             crate::log::emit_raw(
                 crate::log::LogLevel::Debug,
-                &format!("tick {tick_number}: overrun by {:?}", tick_elapsed.saturating_sub(poll_interval)),
+                &format!(
+                    "tick {tick_number}: overrun by {:?}",
+                    tick_elapsed.saturating_sub(poll_interval)
+                ),
             );
         }
 

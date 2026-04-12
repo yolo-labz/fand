@@ -85,10 +85,7 @@ fn schema_uri_points_at_v1_schema() {
 fn id_is_session_urn() {
     let Some(v) = run_dry_run_json() else { return };
     let id = v["$id"].as_str().expect("$id must be string");
-    assert!(
-        id.starts_with("urn:fand:session:"),
-        "wrong $id URN: {id}"
-    );
+    assert!(id.starts_with("urn:fand:session:"), "wrong $id URN: {id}");
 }
 
 #[test]
@@ -97,14 +94,20 @@ fn session_id_is_26_char_ulid() {
     let sid = v["session_id"].as_str().expect("session_id must be string");
     assert_eq!(sid.len(), 26, "session_id must be 26 chars");
     for c in sid.chars() {
-        assert!(c.is_ascii_alphanumeric(), "non-base32 char in session_id: {c}");
+        assert!(
+            c.is_ascii_alphanumeric(),
+            "non-base32 char in session_id: {c}"
+        );
     }
 }
 
 #[test]
 fn planned_writes_is_array() {
     let Some(v) = run_dry_run_json() else { return };
-    assert!(v["planned_writes"].is_array(), "planned_writes must be array");
+    assert!(
+        v["planned_writes"].is_array(),
+        "planned_writes must be array"
+    );
 }
 
 #[test]
@@ -119,6 +122,8 @@ fn planned_teardown_is_array() {
 #[test]
 fn fand_version_matches_cargo_pkg_version() {
     let Some(v) = run_dry_run_json() else { return };
-    let ver = v["fand_version"].as_str().expect("fand_version must be string");
+    let ver = v["fand_version"]
+        .as_str()
+        .expect("fand_version must be string");
     assert_eq!(ver, env!("CARGO_PKG_VERSION"));
 }

@@ -44,9 +44,7 @@ fn main() {
         let start = Instant::now();
         black_box(clamp_pure(i as f32 * 1.5, 1300.0, 6400.0));
         let elapsed = start.elapsed();
-        samples.push(
-            u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX),
-        );
+        samples.push(u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX));
     }
 
     samples.sort_unstable();
@@ -70,7 +68,10 @@ fn main() {
         );
         std::process::exit(1);
     }
-    println!("bench: PASS — p99 = {} us < {} us budget", p99_us, P99_BUDGET_US);
+    println!(
+        "bench: PASS — p99 = {} us < {} us budget",
+        p99_us, P99_BUDGET_US
+    );
 }
 
 /// Black-box consumer to keep the optimizer from elimating the work.

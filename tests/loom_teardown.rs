@@ -20,8 +20,8 @@
 
 #![cfg(loom)]
 
-use loom::sync::Arc;
 use loom::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use loom::sync::Arc;
 use loom::thread;
 
 #[test]

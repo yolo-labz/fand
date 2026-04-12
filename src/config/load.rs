@@ -29,11 +29,9 @@ const MAX_CONFIG_SIZE: u64 = 64 * 1024;
 #[allow(clippy::missing_errors_doc)]
 pub fn load_config(path: &Path) -> Result<Config, ValidationError> {
     // Step 1: Open the file. We allow symlinks (nix-darwin uses them).
-    let mut file = File::open(path).map_err(|e| {
-        ValidationError::MissingRequired {
-            field: format!("config file at {}: {e}", path.display()),
-            fan_index: None,
-        }
+    let mut file = File::open(path).map_err(|e| ValidationError::MissingRequired {
+        field: format!("config file at {}: {e}", path.display()),
+        fan_index: None,
     })?;
 
     // Step 2: fstat on the open fd — check permissions and size.
@@ -77,11 +75,12 @@ pub fn load_config(path: &Path) -> Result<Config, ValidationError> {
     #[cfg(target_os = "macos")]
     if !cfg!(test) && std::env::var("FAND_ALLOW_TMP_CONFIG").as_deref() != Ok("1") {
         let mut resolved = [0u8; libc::PATH_MAX as usize];
-        let rc = unsafe {
-            libc::fcntl(fd, libc::F_GETPATH, resolved.as_mut_ptr())
-        };
+        let rc = unsafe { libc::fcntl(fd, libc::F_GETPATH, resolved.as_mut_ptr()) };
         if rc == 0 {
-            let end = resolved.iter().position(|&b| b == 0).unwrap_or(resolved.len());
+            let end = resolved
+                .iter()
+                .position(|&b| b == 0)
+                .unwrap_or(resolved.len());
             let resolved_str = core::str::from_utf8(&resolved[..end]).unwrap_or("");
             if resolved_str.starts_with("/tmp")
                 || resolved_str.starts_with("/var/tmp")
@@ -99,20 +98,17 @@ pub fn load_config(path: &Path) -> Result<Config, ValidationError> {
 
     // Step 4: read the file content.
     let mut content = String::with_capacity(size as usize);
-    file.read_to_string(&mut content).map_err(|e| {
-        ValidationError::MissingRequired {
+    file.read_to_string(&mut content)
+        .map_err(|e| ValidationError::MissingRequired {
             field: format!("read failed on {}: {e}", path.display()),
             fan_index: None,
-        }
-    })?;
+        })?;
 
     // Step 5: parse TOML.
-    let config: Config = toml::from_str(&content).map_err(|e| {
-        ValidationError::TomlSyntax {
-            line: e.span().map_or(0, |s| s.start),
-            col: 0,
-            message: e.to_string(),
-        }
+    let config: Config = toml::from_str(&content).map_err(|e| ValidationError::TomlSyntax {
+        line: e.span().map_or(0, |s| s.start),
+        col: 0,
+        message: e.to_string(),
     })?;
 
     // Step 6: FR-070 — reject unknown config versions.

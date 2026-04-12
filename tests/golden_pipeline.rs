@@ -1,4 +1,4 @@
-use fand::control::{curve, ema, fusion::FusionMode, fusion};
+use fand::control::{curve, ema, fusion, fusion::FusionMode};
 
 #[test]
 fn golden_curve_evaluation() {

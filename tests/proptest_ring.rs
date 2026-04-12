@@ -19,11 +19,11 @@ use fand::smc::round_trip::{RoundTripOutcome, RoundTripRecord, RoundTripRing};
 /// 4 bytes each; lengths are clamped to 0..=4.
 fn record_strategy() -> impl Strategy<Value = RoundTripRecord> {
     (
-        any::<u64>(),                  // timestamp_ns
-        any::<u32>(),                  // fourcc
-        any::<[u8; 4]>(),              // written
-        any::<[u8; 4]>(),              // readback
-        0u8..=4u8,                     // outcome variant
+        any::<u64>(),     // timestamp_ns
+        any::<u32>(),     // fourcc
+        any::<[u8; 4]>(), // written
+        any::<[u8; 4]>(), // readback
+        0u8..=4u8,        // outcome variant
     )
         .prop_map(|(ts, fc, w, r, outcome_var)| {
             let outcome = match outcome_var {

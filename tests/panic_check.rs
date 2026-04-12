@@ -26,7 +26,10 @@ fn hold_prevents_early_exit() {
     check(&mut s, 96.0, 95.0, 10, now);
 
     let too_early = now + Duration::from_secs(5);
-    assert_eq!(check(&mut s, 90.0, 95.0, 10, too_early), PanicAction::ForceFxMx);
+    assert_eq!(
+        check(&mut s, 90.0, 95.0, 10, too_early),
+        PanicAction::ForceFxMx
+    );
 }
 
 #[test]
@@ -37,7 +40,10 @@ fn exits_after_hold_period() {
     check(&mut s, 96.0, 95.0, 10, now);
 
     let after_hold = now + Duration::from_secs(11);
-    assert_eq!(check(&mut s, 90.0, 95.0, 10, after_hold), PanicAction::Passthrough);
+    assert_eq!(
+        check(&mut s, 90.0, 95.0, 10, after_hold),
+        PanicAction::Passthrough
+    );
     assert!(!s.latched);
 }
 

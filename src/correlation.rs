@@ -151,8 +151,11 @@ mod tests {
         for b in id.as_bytes() {
             assert!(b.is_ascii_alphanumeric(), "non-alphanumeric byte: {b:#x}");
             // Crockford excludes I, L, O, U
-            assert!(!matches!(*b, b'I' | b'L' | b'O' | b'U'),
-                "Crockford excluded letter: {}", *b as char);
+            assert!(
+                !matches!(*b, b'I' | b'L' | b'O' | b'U'),
+                "Crockford excluded letter: {}",
+                *b as char
+            );
         }
     }
 
