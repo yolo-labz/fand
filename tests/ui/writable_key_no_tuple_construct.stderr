@@ -1,0 +1,32 @@
+error[E0423]: cannot initialize a tuple struct which contains private fields
+  --> tests/ui/writable_key_no_tuple_construct.rs:23:13
+   |
+23 |     let _ = WritableKey(unimplemented!());
+   |             ^^^^^^^^^^^
+   |
+note: constructor is not visible here due to private fields
+  --> src/smc/keys.rs
+   |
+   | pub struct WritableKey(inner::WritableKeyInner);
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^ private field
+help: you might have meant to use an associated function to build this type
+   |
+23 -     let _ = WritableKey(unimplemented!());
+23 +     let _ = WritableKey::fan_mode(_);
+   |
+23 -     let _ = WritableKey(unimplemented!());
+23 +     let _ = WritableKey::fan_target(_);
+   |
+23 -     let _ = WritableKey(unimplemented!());
+23 +     let _ = WritableKey::ftst();
+   |
+
+warning: unreachable call
+  --> tests/ui/writable_key_no_tuple_construct.rs:23:13
+   |
+23 |     let _ = WritableKey(unimplemented!());
+   |             ^^^^^^^^^^^ ---------------- any code following this expression is unreachable
+   |             |
+   |             unreachable call
+   |
+   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default

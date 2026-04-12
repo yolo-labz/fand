@@ -1,0 +1,19 @@
+# Rust
+target/
+*.rs.bk
+*.rlib
+
+# Nix
+result
+result-*
+
+# Universal
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# Speckit
+.specify/init-options.json

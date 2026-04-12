@@ -1,0 +1,13 @@
+error[E0603]: module `inner` is private
+ --> tests/ui/writable_key_no_inner_match.rs:16:22
+  |
+ 16 | use fand::smc::keys::inner::WritableKeyInner;
+    |                      ^^^^^  ---------------- enum `WritableKeyInner` is not publicly re-exported
+    |                      |
+    |                      private module
+    |
+note: the module `inner` is defined here
+   --> src/smc/keys.rs
+    |
+    | mod inner {
+    | ^^^^^^^^^

@@ -1,0 +1,13 @@
+error[E0277]: the trait bound `WriteSession: Clone` is not satisfied
+  --> tests/ui/write_session_no_clone.rs:19:19
+   |
+19 |     require_clone(&session);
+   |     ------------- ^^^^^^^^ the trait `Clone` is not implemented for `WriteSession`
+   |     |
+   |     required by a bound introduced by this call
+   |
+note: required by a bound in `require_clone`
+  --> tests/ui/write_session_no_clone.rs:15:21
+   |
+15 | fn require_clone<T: Clone>(_: &T) {}
+   |                     ^^^^^ required by this bound in `require_clone`

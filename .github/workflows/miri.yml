@@ -1,0 +1,53 @@
+# fand miri UB detector. FR-083.
+#
+# miri checks the pure-logic subset for undefined behavior, pointer
+# provenance bugs, uninitialized reads, and strict-provenance violations.
+# The FFI modules (src/smc/ffi.rs, src/smc/enumerate.rs) are excluded via
+# #[cfg(not(miri))] markers on their test modules - miri cannot cross the
+# IOKit boundary to real hardware.
+#
+# Runs nightly. A miri failure on the pure-logic subset is always a real
+# bug and MUST block merges once the miri tag is first green.
+#
+# SECURITY NOTE: no job uses untrusted event payloads in run: contexts.
+
+name: miri
+
+on:
+  schedule:
+    - cron: "45 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: miri-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  miri:
+    name: miri (pure-logic subset)
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install nightly and miri component
+        run: |
+          rustup toolchain install nightly --component miri
+          rustup override set nightly
+
+      - name: cargo miri test (lib, FFI excluded)
+        env:
+          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-check-number-validity"
+        run: |
+          cargo miri test \
+            --lib \
+            --locked \
+            -- \
+            --skip smc::ffi::tests \
+            --skip smc::enumerate::tests

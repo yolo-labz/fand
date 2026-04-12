@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pedrohbalbino.github.io/fand/schemas/dry-run-v1.json",
+  "title": "fand set --dry-run output (v1)",
+  "description": "Machine-readable preview of a planned fan-write sequence. Emitted by `sudo fand set --fan N --rpm V --dry-run --json`. Per FR-038 / FR-100, every envelope carries a $schema URI, a $id ULID, and the per-session correlation ID.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "$id",
+    "schema_version",
+    "subcommand",
+    "mode",
+    "fand_version",
+    "session_id",
+    "fan",
+    "request",
+    "planned_writes",
+    "planned_teardown"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "const": "https://pedrohbalbino.github.io/fand/schemas/dry-run-v1.json"
+    },
+    "$id": {
+      "type": "string",
+      "pattern": "^urn:fand:session:[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "URN containing the per-session ULID correlation ID (FR-100)"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "subcommand": {
+      "type": "string",
+      "const": "set"
+    },
+    "mode": {
+      "type": "string",
+      "const": "dry-run"
+    },
+    "fand_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Crockford base32 ULID (26 chars, FR-100)"
+    },
+    "fan": {
+      "type": "object",
+      "required": ["index", "min_rpm", "max_rpm", "mode_key"],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "min_rpm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_rpm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mode_key": {
+          "type": "string",
+          "description": "fourcc of the fan mode key (e.g. F0md on Apple Silicon, F0Md on Intel)",
+          "minLength": 4,
+          "maxLength": 4
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "required": ["raw_rpm", "clamped_rpm", "was_clamped"],
+      "additionalProperties": false,
+      "properties": {
+        "raw_rpm": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 50000,
+          "description": "Operator-provided RPM before clamping (FR-042 sanity ceiling)"
+        },
+        "clamped_rpm": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Post-clamp value, after applying envelope + FAND_SAFE_MIN_RPM (FR-016, FR-019, FR-063)"
+        },
+        "was_clamped": {
+          "type": "boolean",
+          "description": "True if the raw request was modified by clamping"
+        }
+      }
+    },
+    "planned_writes": {
+      "type": "array",
+      "description": "Sequence of SMC writes that --commit would issue. The dry-run path performs ZERO actual writes per FR-036.",
+      "items": {
+        "type": "object",
+        "required": ["step", "key", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "step": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "key": {
+            "type": "string",
+            "description": "fourcc of the SMC key being written"
+          },
+          "value": {
+            "oneOf": [
+              { "type": "integer" },
+              { "type": "number" }
+            ]
+          }
+        }
+      }
+    },
+    "planned_teardown": {
+      "type": "array",
+      "description": "Sequence of SMC writes the teardown checklist would issue on clean exit (data-model.md §9). Returns the fan to system thermal manager.",
+      "items": {
+        "type": "object",
+        "required": ["step", "key", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "key": { "type": "string" },
+          "value": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

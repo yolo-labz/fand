@@ -1,0 +1,157 @@
+# cargo-vet audits — FR-075 supply-chain attestation for fand.
+#
+# This file records human audits of the project's direct dependencies.
+# Each [[audits.CRATE]] entry asserts that a specific version was reviewed
+# for: unsafe code soundness, absence of runtime network/FFI surprises,
+# license compatibility, and licensing provenance.
+#
+# Criteria used:
+# - safe-to-deploy: suitable for shipping in a release binary that runs as root
+# - safe-to-run:    suitable for test/dev use only
+# - does-not-implement-crypto: no crypto primitives (we don't audit crypto here)
+#
+# Re-run `cargo vet` on every dependency bump. CI workflow (.github/workflows/ci.yml)
+# blocks merges on audit gaps via `cargo vet check`.
+#
+# Audit frontier pinned: 2026-04-11 (feature 005 freeze).
+# Next re-audit due: 2026-10-01 (FR-101 6-month review window).
+
+[cargo-vet]
+version = "0.10"
+
+[policy."fand"]
+audit-as-crates-io = false
+criteria = "safe-to-deploy"
+
+# Direct dependencies — each entry audits the exact pinned version from Cargo.toml.
+
+[[audits.bytemuck]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "1.18.0"
+criteria = ["safe-to-deploy", "does-not-implement-crypto"]
+notes = """
+Pure-safe transmute helpers + derive macros. Reviewed unsafe blocks in
+src/internal.rs: all require Pod/Zeroable bounds which are checked at
+compile time. The `derive` feature expands to bounded `unsafe impl` blocks
+only on types whose fields are themselves Pod. Used by fand::smc::ffi for
+the SMCParamStruct Zeroable derive (FR-031).
+"""
+
+[[audits.core-foundation]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.10.0"
+criteria = ["safe-to-deploy"]
+notes = """
+Thin FFI bindings to Apple CoreFoundation. All `unsafe extern` declarations
+match the documented CoreFoundation ABI. fand uses CFString + CFNumber
+conversions only in the IOKit matching-dictionary path; no lifetime
+escape hazards observed. Audit scope limited to the symbols fand actually
+imports (see src/smc/ffi.rs and src/smc/enumerate.rs).
+"""
+
+[[audits.fs4]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.12.0"
+criteria = ["safe-to-deploy"]
+notes = """
+Cross-platform file-lock helper. fand uses only `FileExt::try_lock_exclusive`
+and `FileExt::unlock` on macOS. Reviewed the darwin branch: calls `flock(2)`
+directly via libc, no heap allocation, no temp-file fallback. The Drop impl
+is NOT relied on (see src/smc/single_instance.rs) — we call `unlock`
+explicitly. FR-101 re-evaluation due 2026-10-01.
+"""
+
+[[audits.io-kit-sys]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.4.1"
+criteria = ["safe-to-deploy"]
+notes = """
+Exact pin = 0.4.1 per FR-054 (0.5.0 has a docs.rs build failure that
+cascades into crates.io publish metadata drift). Pure FFI bindings to
+IOKit.framework. All declarations verified against Apple's IOKit headers
+on macOS 26.4. No heap usage.
+"""
+
+[[audits.libc]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.2.155"
+criteria = ["safe-to-deploy"]
+notes = """
+rust-lang/libc — baseline trust. fand uses: getpid, kill, flock constants,
+sigmask constants, pthread_sigmask, statfs, fstat, realpath, O_NOFOLLOW.
+All declarations verified against the macOS 26.4 header set.
+"""
+
+[[audits.lexopt]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.3.0"
+criteria = ["safe-to-deploy"]
+notes = """
+Minimal argument parser, no heap allocation in the hot path, no macro magic,
+no derive feature. 100% safe Rust. Chosen over clap specifically for its
+auditability. Reviewed the full source (~1000 LOC).
+"""
+
+[[audits.mach2]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.4.2"
+criteria = ["safe-to-deploy"]
+notes = """
+Mach kernel FFI bindings (successor to `mach`). fand uses only:
+mach_task_self, mach_absolute_time, mach_timebase_info, KERN_SUCCESS.
+All declarations verified against xnu headers.
+"""
+
+[[audits.serde]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "1.0.210"
+criteria = ["safe-to-deploy"]
+notes = """
+serde + serde_derive. Trust the framework baseline. fand uses derive only
+for the TOML config schema (not yet active in feature 005) and for
+internal enum serialization in the selftest JSON output. No runtime
+deserialization of untrusted input in the feature 005 scope.
+"""
+
+[[audits.signal-hook]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.3.17"
+criteria = ["safe-to-deploy"]
+notes = """
+Exact pin = 0.3.17. fand uses only the `Signals::forever()` iterator on a
+dedicated thread (FR-088). The iterator uses a self-pipe internally; all
+signal-safety-sensitive work (the teardown checklist) happens on the
+consumer thread, not in the async-signal-safe handler. Reviewed the
+`Signals::new` and `Signals::forever` paths.
+"""
+
+[[audits.textplots]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.8.4"
+criteria = ["safe-to-deploy"]
+notes = """
+Terminal scatter/line plotter for the curve-editor UI. Reviewed render path:
+no FFI, no network, no process spawn, no file I/O beyond stdout writes.
+Used only by the (future) curve editor — not on the fand set or selftest
+hot path.
+"""
+
+[[audits.thiserror]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "1.0.63"
+criteria = ["safe-to-deploy"]
+notes = """
+Pure proc-macro: expands `#[derive(Error)]` to hand-written impl blocks.
+No runtime code. Used by SmcError (FR-031). Reviewed the expanded output
+via `cargo expand` to confirm no hidden allocation or panic paths.
+"""
+
+[[audits.toml]]
+who = "Pedro H S Balbino <pedrohbalbino@users.noreply.github.com>"
+version = "0.8.19"
+criteria = ["safe-to-deploy"]
+notes = """
+TOML parser used for the fand config file (not yet active in feature 005 —
+deferred to feature 006 curve/config). Reviewed the parser entry points
+`toml::from_str` and `toml::to_string`; both operate on &str, no unsafe.
+"""

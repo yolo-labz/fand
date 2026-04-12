@@ -1,0 +1,74 @@
+# fand release workflow — FR-022..025, FR-032, FR-044..047.
+#
+# Triggered on git tags matching v*. Builds the binary via nix,
+# creates a GitHub Release with the binary artifact, SHA-256,
+# and SLSA provenance attestation.
+#
+# SECURITY NOTE: no job uses untrusted event payloads in run: contexts.
+# The only github.* reference is github.ref_name in the release body
+# template, which GitHub validates against a safe tag-name character set.
+
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    name: build and release
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build fand via nix
+        run: nix build .#fand
+
+      - name: Extract binary and compute SHA-256
+        run: |
+          cp result/bin/fand ./fand-aarch64-darwin
+          sha=$(sha256sum ./fand-aarch64-darwin | awk '{print $1}')
+          echo "SHA256=${sha}" >> "$GITHUB_ENV"
+
+      - name: Verify codesign
+        run: codesign --verify --verbose ./fand-aarch64-darwin
+
+      - name: Check binary runs
+        run: ./fand-aarch64-darwin version
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ./fand-aarch64-darwin
+
+      - uses: softprops/action-gh-release@v2
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        with:
+          files: ./fand-aarch64-darwin
+          body: |
+            ## fand ${{ github.ref_name }}
+
+            **SHA-256**: `${{ env.SHA256 }}`
+            **Codesign**: valid (ad-hoc via stdenv sigtool)
+            **Platform**: aarch64-darwin (Apple Silicon macOS 14+)
+
+            ### Install via Nix
+            ```
+            nix build github:yolo-labz/fand/${{ github.ref_name }}
+            ```
+
+            ### Verify provenance
+            ```
+            gh attestation verify ./fand-aarch64-darwin --owner yolo-labz
+            ```

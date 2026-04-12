@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pedrohbalbino.github.io/fand/schemas/selftest-v1.json",
+  "title": "fand selftest output (v1)",
+  "description": "Machine-readable report of an N-iteration F0md=0↔1 oscillation selftest. Emitted by `sudo fand selftest --json`. Per FR-038 / FR-100, every envelope carries a $schema URI, a $id ULID, and the per-session correlation ID. The Apple Silicon adaptation (RD-08) replaces the original 'min RPM hold + max RPM hold' design with auto/forced-min mode oscillation; the median delta between the two hold windows must be ≥ 500 RPM for a PASS verdict.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "$id",
+    "schema_version",
+    "subcommand",
+    "fand_version",
+    "session_id",
+    "per_fan",
+    "summary"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "const": "https://pedrohbalbino.github.io/fand/schemas/selftest-v1.json"
+    },
+    "$id": {
+      "type": "string",
+      "pattern": "^urn:fand:session:[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "subcommand": {
+      "type": "string",
+      "const": "selftest"
+    },
+    "fand_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "per_fan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "fan_index",
+          "iterations_completed",
+          "iterations_requested",
+          "round_trip_count",
+          "mismatch_count",
+          "median_actual_at_min",
+          "median_actual_at_auto",
+          "delta_rpm",
+          "result"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "fan_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "iterations_completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "iterations_requested": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "round_trip_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of write+readback pairs executed (typically 2 × iterations_completed)"
+          },
+          "mismatch_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of round-trip mismatches (FR-007). >0 means FAIL."
+          },
+          "median_actual_at_min": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Median F0Ac sample during forced-min hold windows"
+          },
+          "median_actual_at_auto": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Median F0Ac sample during auto-mode hold windows"
+          },
+          "delta_rpm": {
+            "type": "number",
+            "description": "median_actual_at_auto - median_actual_at_min. Pass criterion: ≥ 500 RPM (FR-045)."
+          },
+          "result": {
+            "type": "string",
+            "enum": ["pass", "inconclusive", "fail", "watchdog_timeout", "conflict"],
+            "description": "Per-fan classification per FR-045/047. inconclusive = zero mismatches but delta < 500 RPM (system too cool to differentiate)."
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "fans_tested",
+        "total_iterations",
+        "total_round_trips",
+        "total_mismatches",
+        "wall_clock_ms",
+        "overall_result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fans_tested": { "type": "integer", "minimum": 0 },
+        "total_iterations": { "type": "integer", "minimum": 0 },
+        "total_round_trips": { "type": "integer", "minimum": 0 },
+        "total_mismatches": { "type": "integer", "minimum": 0 },
+        "wall_clock_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total elapsed time in ms. FR-048 caps this at 30000 per fan."
+        },
+        "overall_result": {
+          "type": "string",
+          "enum": ["pass", "inconclusive", "fail", "watchdog_timeout", "conflict"]
+        }
+      }
+    }
+  }
+}

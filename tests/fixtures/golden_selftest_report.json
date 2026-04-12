@@ -1,0 +1,29 @@
+{
+  "$schema": "https://pedrohbalbino.github.io/fand/schemas/selftest-v1.json",
+  "$id": "urn:fand:session:01FAND00000000000000REDACT",
+  "schema_version": 1,
+  "subcommand": "selftest",
+  "fand_version": "0.2.0",
+  "session_id": "01FAND00000000000000REDACT",
+  "per_fan": [
+    {
+      "fan_index": 0,
+      "iterations_completed": 5,
+      "iterations_requested": 5,
+      "round_trip_count": 10,
+      "mismatch_count": 0,
+      "median_actual_at_min": 0.0,
+      "median_actual_at_auto": 0.0,
+      "delta_rpm": 0.0,
+      "result": "pass"
+    }
+  ],
+  "summary": {
+    "fans_tested": 1,
+    "total_iterations": 5,
+    "total_round_trips": 10,
+    "total_mismatches": 0,
+    "wall_clock_ms": 0,
+    "overall_result": "pass"
+  }
+}

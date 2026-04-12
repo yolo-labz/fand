@@ -1,0 +1,83 @@
+[package]
+name = "fand"
+version = "0.3.0"                                        # feature 007: first tagged release
+edition = "2021"
+rust-version = "1.84"
+description = "Apple Silicon fan control daemon"
+license = "MIT"
+
+[dependencies]
+# Exact-pin strategy per FR-078: versions frozen to the set resolved at 2026-04-11
+# against the project's Rust 1.84 toolchain. Floating caret ranges are forbidden.
+# The caret-less pins below avoid cross-crate-version skew without breaking
+# transitive compatibility with `toml_edit` which the workspace pulls in.
+bytemuck = { version = "=1.18.0", features = ["derive"] }  # FR-031: safe Zeroable derive (T002: exact pin)
+core-foundation = "=0.10.0"                               # T002: exact pin
+fs4 = "=0.12.0"                                           # feature 005 FR-050: flock for single-instance (RD-05, FR-101 re-eval by 2026-10-01); T002: exact pin
+io-kit-sys = "=0.4.1"                                     # FR-054: exact pin, avoid 0.5.0 docs.rs failure
+libc = "=0.2.155"                                         # T002: exact pin
+lexopt = "=0.3.0"                                         # T002: exact pin
+mach2 = "=0.4.2"                                          # T002: exact pin
+serde = { version = "=1.0.210", features = ["derive"] }   # T002: exact pin
+signal-hook = "=0.3.17"                                   # FR-071 from feature 003; T002: exact pin (was ">=0.3.17, <0.4")
+thiserror = "=1.0.63"                                     # feature 005 FR-031: derive(Error) for SmcError; T002: exact pin
+textplots = "=0.8.4"                                      # T002: exact pin
+toml = "=0.8.19"                                          # T002: exact pin
+
+[features]
+# T052, T053: opt-in feature for live-hardware integration tests that
+# require root and a real AppleSMC connection. Never enabled in CI.
+live-hardware = []
+# T053: simulated watchdog-stall mode for the T053 hardware test.
+# Compiles in a shorter watchdog deadline so the test can observe
+# the FR-002 fire path without waiting 4 real seconds.
+debug-watchdog-stall = []
+
+[dev-dependencies]
+serde_json = "1"
+trybuild = "1"                                          # FR-045: compile-fail tests
+proptest = "1"                                          # feature 005 FR-086: property-based testing
+tempfile = "3"                                          # feature 006: config load tests
+
+# Loom is only compiled when `--cfg loom` is set on the command line
+# (see tests/loom_teardown.rs and .github/workflows/nightly.yml).
+# Without the cfg flag, loom does NOT link into the normal test build.
+[target.'cfg(loom)'.dev-dependencies]
+loom = { version = "0.7", default-features = false }
+
+# T105: hand-rolled write-latency bench. Uses a plain `main()` rather
+# than the libtest harness so we don't depend on criterion.
+[[bench]]
+name = "write_latency"
+harness = false
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+debug = false
+overflow-checks = true
+
+[lints.clippy]
+# Rust Foundation Safety-Critical Coding Guidelines deny set
+# (FR-080, feature 005). The full set is enforced project-wide; the
+# write-path modules in src/smc/ rely on these to lock the safety
+# invariants from FR-016, FR-019, FR-031, FR-090.
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+unreachable = "deny"
+todo = "deny"
+indexing_slicing = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+arithmetic_side_effects = "warn"
+float_cmp = "warn"
+as_conversions = "warn"
+lossy_float_literal = "warn"
+must_use_candidate = "warn"
+missing_safety_doc = "warn"
+missing_errors_doc = "warn"

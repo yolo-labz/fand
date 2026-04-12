@@ -1,0 +1,21 @@
+# Test curve config for feature 006 integration tests.
+# Mac17,2 (M3 Pro) — sensor keys from RD-03.
+config_version = 1
+poll_interval_ms = 500
+log_level = "info"
+
+[[fan]]
+index = 0
+sensors = [{smc = "Tf04"}, {smc = "Tf09"}, {smc = "Tf0D"}]
+hysteresis_up = 1.0
+hysteresis_down = 2.0
+smoothing_alpha = 0.25
+ramp_down_rpm_per_s = 600
+panic_temp_c = 95.0
+panic_hold_s = 10
+curve = [
+  [50.0, 2317],
+  [65.0, 3500],
+  [75.0, 5000],
+  [85.0, 6550],
+]

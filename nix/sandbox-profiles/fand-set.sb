@@ -1,0 +1,127 @@
+;; fand sandbox-exec profile — FR-074.
+;;
+;; Wraps `fand set --commit` (and `fand selftest`) under `sandbox-exec -f`
+;; on macOS, denying everything except the narrow surface the write path
+;; actually needs. Apple has deprecated the `sandbox-exec` CLI but the
+;; underlying policy engine (Seatbelt / sandbox.kext) is still active
+;; and will remain so for the foreseeable future.
+;;
+;; Usage (opt-in, not wired into the default invocation):
+;;
+;;   sudo sandbox-exec -f nix/sandbox-profiles/fand-set.sb \
+;;        /usr/local/bin/fand set --fan 0 --rpm 2317 --commit
+;;
+;; This profile MUST be kept in sync with the IOKit + filesystem
+;; footprint documented in specs/005-smc-write-roundtrip/threat-model.md.
+
+(version 1)
+
+;; Default-deny everything. Each permitted surface is explicitly allowed
+;; below. This is the safest posture per Apple's sandbox-exec guide.
+(deny default)
+
+;; ---------------------------------------------------------------------
+;; IOKit user-client open (the core of the SMC write path)
+;; ---------------------------------------------------------------------
+;; The AppleSMC user client is the only IOKit service fand needs.
+;; Three connections are opened: main + signal-thread + panic-hook
+;; (FR-090 three-connection model).
+(allow iokit-open
+  (iokit-user-client-class "AppleSMCUserClient"))
+
+;; ---------------------------------------------------------------------
+;; Single-instance lockfile
+;; ---------------------------------------------------------------------
+;; The write path acquires an exclusive flock on /var/run/fand-smc.lock.
+;; macOS redirects /var/run to /private/var/run — both paths must be
+;; allowed because realpath() canonicalizes to the latter.
+(allow file-read-data file-read-metadata file-write-data file-write-create
+  (literal "/var/run/fand-smc.lock")
+  (literal "/private/var/run/fand-smc.lock"))
+
+;; Directory existence checks for the lockfile parent.
+(allow file-read-metadata
+  (literal "/var/run")
+  (literal "/private/var/run"))
+
+;; ---------------------------------------------------------------------
+;; Binary execution + shared libraries
+;; ---------------------------------------------------------------------
+(allow process-exec
+  (literal "/usr/local/bin/fand")
+  (literal "/opt/homebrew/bin/fand"))
+
+;; dyld + libsystem + the full Apple dylib dependency chain. The write
+;; path statically imports CoreFoundation and IOKit; both are Apple
+;; framework bundles that sandbox-exec permits via these blanket rules.
+(allow file-read*
+  (subpath "/usr/lib")
+  (subpath "/usr/share")
+  (subpath "/System/Library/Frameworks")
+  (subpath "/System/Library/PrivateFrameworks")
+  (subpath "/System/Library/Extensions")
+  (literal "/usr/share/icu/icudt68l.dat"))
+
+;; dyld cache files.
+(allow file-read*
+  (subpath "/private/var/db/dyld")
+  (subpath "/private/var/db/timezone"))
+
+;; ---------------------------------------------------------------------
+;; Process introspection for EDR detection (FR-072)
+;; ---------------------------------------------------------------------
+;; `detect_suspected_agent()` spawns `ps -ax -o comm` to grep for known
+;; EDR daemons. Only the exact ps binary and its read-only syscalls
+;; are permitted.
+(allow process-exec
+  (literal "/bin/ps"))
+(allow process-fork)
+(allow signal (target self))
+(allow sysctl-read)
+
+;; ---------------------------------------------------------------------
+;; stdio + terminal
+;; ---------------------------------------------------------------------
+;; Logging via stderr, JSON output via stdout, SIGINFO handling.
+(allow file-read-data file-write-data
+  (literal "/dev/null")
+  (literal "/dev/tty")
+  (literal "/dev/stdout")
+  (literal "/dev/stderr"))
+(allow file-read-metadata
+  (literal "/dev/stdin")
+  (literal "/dev/stdout")
+  (literal "/dev/stderr"))
+
+;; ---------------------------------------------------------------------
+;; Mach services — the absolute minimum.
+;; ---------------------------------------------------------------------
+;; IOKit requires `com.apple.iokit.IOServiceRoot` + bootstrap lookup.
+(allow mach-lookup
+  (global-name "com.apple.iokit.powerd")        ;; read only
+  (global-name "com.apple.system.logger")       ;; syslog fallback
+  (global-name "com.apple.CoreServices.coreservicesd"))
+
+;; mach_port_guard + mach_task_self (FR-073).
+(allow mach-priv-host-port)
+(allow mach-task-name)
+
+;; ---------------------------------------------------------------------
+;; Environment — allowlist already enforced in src/security.rs
+;; ---------------------------------------------------------------------
+;; FAND_SAFE_MIN_RPM passthrough lives in the process env, not the
+;; sandbox profile. No entry needed here.
+
+;; ---------------------------------------------------------------------
+;; Explicit denies — loud no-ops that make the sandbox's intent clear.
+;; ---------------------------------------------------------------------
+(deny network*)                                ;; no network at all
+(deny file-write*
+  (subpath "/etc")
+  (subpath "/usr")
+  (subpath "/System")
+  (subpath "/Library"))
+(deny file-read-data
+  (subpath "/Users")
+  (subpath "/private/var/folders")              ;; keychains, etc.
+  (subpath "/private/var/db"))

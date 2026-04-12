@@ -1,0 +1,65 @@
+# cargo-deny policy for fand — FR-076.
+#
+# This file is enforced on every pre-merge CI run via
+# `cargo deny check` (see .github/workflows/ci.yml).
+# Re-evaluation cadence: every dependency bump + 6-month review (FR-101).
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+# FR-076: zero-tolerance for known-bad crates. Yanked + unmaintained
+# upgraded from "warn" to "deny" per T004. A yanked transitive pins
+# the release — we'd rather fail CI than ship a known-compromised build.
+yanked = "deny"
+unmaintained = "deny"
+# Vulnerabilities are always fatal.
+vulnerability = "deny"
+# Notices (soft advisories that haven't been classified yet) are warned,
+# not denied, so a newly-disclosed CVE doesn't brick CI before we've had
+# a chance to investigate.
+notice = "warn"
+
+[licenses]
+unlicensed = "deny"
+# Allowlist is conservative — extend only after reviewing the license text.
+# fs4 (MIT) introduces no new SPDX identifiers beyond this set as of 0.12.0.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+]
+
+[bans]
+# FR-078: exact-pinned versions forbid multiple transitive copies.
+# Upgraded from "warn" to "deny" — a duplicate in the tree means
+# our pin strategy leaked. Explicitly skip allow-list is empty.
+multiple-versions = "deny"
+wildcards = "deny"
+highlight = "all"
+
+# Crates that are explicitly forbidden at any version.
+deny = [
+    # Async runtimes are banned by FR-075 (control loop is single-threaded).
+    { name = "tokio" },
+    { name = "async-std" },
+    { name = "smol" },
+    # Tracing framework is banned by FR-097 (bespoke logger only).
+    { name = "tracing" },
+    { name = "log" },
+    # clap is banned in favor of lexopt (auditability, FR-080).
+    { name = "clap" },
+    # OpenSSL vendored is banned — we don't do TLS on the SMC path.
+    { name = "openssl-sys" },
+]
+
+[sources]
+# Hard-deny any registry that isn't crates.io. FR-078.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

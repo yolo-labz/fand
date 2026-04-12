@@ -1,0 +1,15 @@
+[
+  {"tick": 0, "sensors": [48.0, 45.0, 47.0], "expected_rpm": 0, "note": "idle, below first breakpoint → min RPM"},
+  {"tick": 1, "sensors": [48.5, 45.5, 47.5], "expected_rpm": 0, "note": "still below 50°C"},
+  {"tick": 2, "sensors": [51.0, 49.0, 50.5], "expected_rpm": 133, "note": "just above 50°C, interpolating"},
+  {"tick": 10, "sensors": [55.0, 53.0, 54.0], "expected_rpm": 833, "note": "rising"},
+  {"tick": 20, "sensors": [60.0, 58.0, 59.0], "expected_rpm": 1667, "note": "midpoint of first segment"},
+  {"tick": 30, "sensors": [65.0, 63.0, 64.0], "expected_rpm": 2500, "note": "at second breakpoint"},
+  {"tick": 40, "sensors": [70.0, 68.0, 69.0], "expected_rpm": 3667, "note": "between 2nd and 3rd"},
+  {"tick": 50, "sensors": [75.0, 73.0, 74.0], "expected_rpm": 4833, "note": "approaching max"},
+  {"tick": 60, "sensors": [80.0, 78.0, 79.0], "expected_rpm": 6000, "note": "at last breakpoint"},
+  {"tick": 70, "sensors": [85.0, 83.0, 84.0], "expected_rpm": 6000, "note": "above last → clamped"},
+  {"tick": 80, "sensors": [78.0, 76.0, 77.0], "expected_rpm": 6000, "note": "falling but in hysteresis band (down=3°C)"},
+  {"tick": 90, "sensors": [75.0, 73.0, 74.0], "expected_rpm": 6000, "note": "still in hysteresis band (dropped 5°C, but slew limits)"},
+  {"tick": 100, "sensors": [70.0, 68.0, 69.0], "expected_rpm": 5700, "note": "slew-limited ramp down (300 RPM/tick at 600/s)"}
+]

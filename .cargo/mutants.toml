@@ -1,0 +1,57 @@
+# cargo-mutants configuration — FR-085.
+#
+# Pre-merge runs use --in-diff against origin/main so CI only mutates
+# the files changed by the current PR (faster, keeps pre-merge latency
+# under ~15 minutes). The nightly mutants job uses the full tree.
+#
+# Target caught-score: >= 85% on the four hot modules listed under
+# `examine_globs`. A drop below 85% fails the nightly job.
+
+# Give each mutant run twice the baseline test time before declaring
+# a timeout — some of the proptest+kani cycles are slow on macos-latest.
+timeout_multiplier = 2.0
+
+# Skip the FFI shim modules: they call into real IOKit and cannot be
+# meaningfully mutated without a live-hardware fixture. The trybuild
+# ui tests and FFI unit tests still catch regressions there.
+exclude_globs = [
+    "src/smc/enumerate.rs",
+    "src/smc/types.rs",
+    "src/smc/sleep.rs",
+    "src/launchd/*.rs",
+    "tests/ui/*.rs",
+    "tests/compile_fail.rs",
+    "build.rs",
+]
+
+# Only mutate the load-bearing modules by default. The nightly job
+# can widen this by overriding --file.
+examine_globs = [
+    "src/control/state.rs",
+    "src/smc/round_trip.rs",
+    "src/smc/ffi.rs",
+    "src/smc/write_session.rs",
+    "src/smc/keys.rs",
+    "src/smc/unlock.rs",
+    "src/smc/panic_hook.rs",
+    "src/smc/signal.rs",
+    "src/correlation.rs",
+    "src/security.rs",
+    "src/cli/parse.rs",
+]
+
+# Skip whole function bodies where mutation is meaningless:
+# Display / Debug impls, FFI constant tables, and panic-hook bodies
+# (the latter cannot be tested without forking the process).
+exclude_re = [
+    "impl .*Display.*",
+    "impl .*Debug.*",
+    "fn panic_hook_body",
+    "const fn .*_name",
+]
+
+# cargo-mutants invokes `cargo test` by default. We use --locked to
+# keep the frontier frozen and --release because the tick-loop and
+# round-trip paths only make sense at -O2.
+test_tool = "cargo"
+additional_cargo_args = ["--locked", "--release"]

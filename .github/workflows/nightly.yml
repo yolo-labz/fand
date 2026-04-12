@@ -1,0 +1,103 @@
+# fand nightly slow-gates. FR-082, FR-085, FR-086.
+#
+# These jobs are too slow for pre-merge CI (minutes to hours per run)
+# but must run at least once per day to catch regressions early.
+# Failure here is not merge-blocking but produces a visible RED on the
+# default branch and an issue-bot notification.
+#
+# SECURITY NOTE: no job uses untrusted event payloads in run: contexts.
+# The only github.* reference is github.ref in the concurrency group.
+
+name: nightly
+
+on:
+  schedule:
+    - cron: "15 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  proptest-soak:
+    name: proptest soak (1M cases)
+    runs-on: macos-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run proptest with 1M cases per property
+        env:
+          PROPTEST_CASES: "1000000"
+          PROPTEST_MAX_SHRINK_ITERS: "1000000"
+        run: cargo test --test 'proptest_*' --release --locked
+
+  mutants:
+    name: cargo-mutants (FR-085, caught score >= 85 percent)
+    runs-on: macos-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: cargo install --locked cargo-mutants
+      - name: Run mutants in --in-diff origin/main mode
+        run: |
+          cargo mutants \
+            --baseline auto \
+            --in-diff origin/main \
+            --timeout-multiplier 2.0 \
+            --file 'src/control/state.rs' \
+            --file 'src/smc/round_trip.rs' \
+            --file 'src/smc/ffi.rs' \
+            --file 'src/smc/write_session.rs' \
+            --output target/mutants
+      - name: Upload mutants report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutants-report
+          path: target/mutants/
+
+  kani:
+    name: cargo-kani (FR-082 proof harnesses)
+    runs-on: macos-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install cbmc + kani
+        run: |
+          brew install cbmc
+          cargo install --locked kani-verifier
+          cargo kani setup
+      - name: Run all cfg(kani) proof harnesses
+        run: cargo kani --enable-unstable
+      - name: Upload proof logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kani-proofs
+          path: target/kani/
+
+  loom:
+    name: loom teardown model-check (FR-084)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - env:
+          LOOM_MAX_PREEMPTIONS: "3"
+          LOOM_CHECKPOINT_INTERVAL: "1000"
+          RUSTFLAGS: "--cfg loom"
+        run: cargo test --test loom_teardown --release --locked

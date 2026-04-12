@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pedrohbalbino.github.io/fand/schemas/run-tick-v1.json",
+  "title": "fand run --dry-run --json per-tick JSONL envelope",
+  "description": "One JSON object per tick, emitted as a JSONL line. FR-097, FR-098.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schema_version",
+    "session_id",
+    "tick_number",
+    "timestamp_ms",
+    "fan_index",
+    "max_temp_c",
+    "raw_curve_rpm",
+    "clamped_rpm",
+    "mode_decision"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://pedrohbalbino.github.io/fand/schemas/run-tick-v1.json"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "26-character Crockford base32 ULID"
+    },
+    "tick_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timestamp_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix epoch milliseconds"
+    },
+    "fan_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "max_temp_c": {
+      "type": "number",
+      "description": "Maximum sensor temperature for this fan (°C)"
+    },
+    "raw_curve_rpm": {
+      "type": "number",
+      "description": "Curve interpolation output before clamping"
+    },
+    "clamped_rpm": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535,
+      "description": "Final clamped RPM value"
+    },
+    "mode_decision": {
+      "type": "string",
+      "enum": ["forced_minimum", "auto"],
+      "description": "Apple Silicon F0md decision"
+    }
+  },
+  "additionalProperties": false
+}
