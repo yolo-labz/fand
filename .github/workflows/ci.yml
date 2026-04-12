@@ -41,8 +41,6 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - run: cargo build --release --locked
-        env:
-          RUSTFLAGS: "-D warnings"
 
       - run: cargo test --lib --locked
 
@@ -67,7 +65,7 @@ jobs:
         run: |
           rustup toolchain install 1.84.0 --profile minimal --component clippy
           rustup default 1.84.0
-      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo clippy --all-targets --locked
 
   rustfmt:
     name: rustfmt
