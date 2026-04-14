@@ -399,29 +399,46 @@ fn execute_commit(
                 tick_start,
             );
 
-            // Stage 10: Apple Silicon adapter → F0md decision.
+            // Stage 10: Apple Silicon adapter → F0md decision (RD-08).
+            // The adapter decides between ForcedMinimum (F0md=1) and Auto
+            // (F0md=0, thermalmonitord manages). On Apple Silicon M-series,
+            // these are the ONLY writable F0md states — arbitrary RPM
+            // targets via F0Tg/F0Dc return SMC result 0x86.
             let adapter = match adapters.get_mut(fan_idx) {
                 Some(a) => a,
                 None => continue,
             };
             let decision = adapter.decide(target_rpm, fan_state.min_rpm, fan_state.max_rpm);
-            let mode_byte = decision.mode_byte();
 
-            // Write F0md via the session.
-            let clamped_rpm = ClampedRpm::new(target_rpm, fan_state.min_rpm, fan_state.max_rpm);
-            if let Err(e) = session.commit_set_fan(fan_cfg.index, clamped_rpm) {
-                crate::log::emit_raw(
-                    crate::log::LogLevel::Error,
-                    &format!(
-                        "tick {tick_number} fan {}: write failed: {e}",
-                        fan_cfg.index
-                    ),
-                );
-                // On write error, teardown is handled by the session's
-                // Drop impl / signal thread.
+            // Route the write through the adapter decision. When Auto,
+            // we skip the SMC write entirely — thermalmonitord manages
+            // the fan, and fand only needs to ensure F0md=0 (release)
+            // when transitioning away from ForcedMinimum.
+            match decision {
+                crate::control::adapter::AppleSiliconDecision::ForcedMinimum => {
+                    // Write F0md=1 at the hardware minimum. commit_set_fan's
+                    // pre-flight check accepts this (request ≈ min RPM).
+                    let clamped_rpm = ClampedRpm::new(
+                        fan_state.min_rpm,
+                        fan_state.min_rpm,
+                        fan_state.max_rpm,
+                    );
+                    if let Err(e) = session.commit_set_fan(fan_cfg.index, clamped_rpm) {
+                        crate::log::emit_raw(
+                            crate::log::LogLevel::Error,
+                            &format!(
+                                "tick {tick_number} fan {}: forced-min write failed: {e}",
+                                fan_cfg.index
+                            ),
+                        );
+                    }
+                }
+                crate::control::adapter::AppleSiliconDecision::Auto => {
+                    // No SMC write — thermalmonitord is the authority.
+                    // The transition from ForcedMinimum → Auto is handled
+                    // by the signal-thread teardown writing F0md=0 on exit.
+                }
             }
-
-            let _ = mode_byte; // Used in the F0md write path above via commit_set_fan.
         }
 
         // FR-036: heartbeat the watchdog after successful writes.
