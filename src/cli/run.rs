@@ -418,11 +418,8 @@ fn execute_commit(
                 crate::control::adapter::AppleSiliconDecision::ForcedMinimum => {
                     // Write F0md=1 at the hardware minimum. commit_set_fan's
                     // pre-flight check accepts this (request ≈ min RPM).
-                    let clamped_rpm = ClampedRpm::new(
-                        fan_state.min_rpm,
-                        fan_state.min_rpm,
-                        fan_state.max_rpm,
-                    );
+                    let clamped_rpm =
+                        ClampedRpm::new(fan_state.min_rpm, fan_state.min_rpm, fan_state.max_rpm);
                     if let Err(e) = session.commit_set_fan(fan_cfg.index, clamped_rpm) {
                         crate::log::emit_raw(
                             crate::log::LogLevel::Error,

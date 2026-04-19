@@ -1,6 +1,6 @@
 [package]
 name = "fand"
-version = "0.3.0"                                        # feature 007: first tagged release
+version = "0.3.2"                                        # feature 007: first tagged release
 edition = "2021"
 rust-version = "1.84"
 description = "Apple Silicon fan control daemon"
