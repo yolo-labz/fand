@@ -128,7 +128,7 @@ dependencies = [
 
 [[package]]
 name = "fand"
-version = "0.3.0"
+version = "0.3.2"
 dependencies = [
  "bytemuck",
  "core-foundation",
