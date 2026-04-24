@@ -21,6 +21,21 @@ pub const SMC_CMD_GET_KEY_INFO: u8 = 9;
 pub const TYPE_FLT: u32 = u32::from_be_bytes(*b"flt ");
 pub const TYPE_UI8: u32 = u32::from_be_bytes(*b"ui8 ");
 pub const TYPE_UI32: u32 = u32::from_be_bytes(*b"ui32");
+pub const TYPE_FPE2: u32 = u32::from_be_bytes(*b"fpe2");
+pub const TYPE_SP78: u32 = u32::from_be_bytes(*b"sp78");
+
+// ------------------------------------------------------------------------
+// SMC key attribute bits (feature 006: ultrathink bypass enumeration).
+// AppleSMC.kext exposes a one-byte attribute field per key in
+// SMCKeyInfoData.data_attributes. The write bit (0x40) is the gate that
+// `fand probe --enumerate` uses to distinguish keys the kernel will accept
+// writes for from purely readable keys, without blindly poking every
+// fourcc in the 4.3-billion-entry keyspace.
+// ------------------------------------------------------------------------
+
+pub const ATTR_READABLE: u8 = 0x80;
+pub const ATTR_WRITABLE: u8 = 0x40;
+pub const ATTR_FUNCTION: u8 = 0x20;
 
 // ------------------------------------------------------------------------
 // WritableKey — opaque newtype (FR-019)

@@ -30,6 +30,7 @@ fn main() {
         Some("curve") => cli::curve_cmd::execute(&args[2..]),
         Some("keys") => cli::keys::execute(&args[2..]),
         Some("probe") => cli::probe::execute(&args[2..]),
+        Some("force-rpm") => cli::force::execute(&args[2..]),
         Some("validate") => cli::validate::execute(&args[2..]),
         Some("reload") => cli::reload::execute(&args[2..]),
         Some("version") | Some("--version") | Some("-V") => cli::version::execute(),
@@ -37,7 +38,9 @@ fn main() {
         None => cli::status::execute(&[]),
         Some(unknown) => {
             eprintln!("fand: unknown subcommand '{unknown}'");
-            eprintln!("usage: fand [run|curve|status|show|set|keys|probe|validate|reload|version]");
+            eprintln!(
+                "usage: fand [run|curve|status|show|set|keys|probe|force-rpm|validate|reload|version]"
+            );
             std::process::exit(64);
         }
     }

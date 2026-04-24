@@ -1192,6 +1192,53 @@ impl SmcConnection {
         Ok(output.key)
     }
 
+    /// Read full `KeyInfo` for a fourcc, including the `data_attributes`
+    /// byte. The cache only stores (size, type), so this call always issues
+    /// a fresh `kSMCGetKeyInfo`.
+    ///
+    /// Used by the ultrathink bypass probe to enumerate every SMC key
+    /// whose attribute byte advertises the writable bit (0x40), instead of
+    /// blind-writing every fourcc.
+    ///
+    /// # Errors
+    /// See `SmcError` variants.
+    #[must_use = "IOKit errors must be handled"]
+    pub fn read_key_info_full(&mut self, fourcc: u32) -> Result<(KeyInfo, u8), SmcError> {
+        let mut input: SMCParamStruct = bytemuck::Zeroable::zeroed();
+        input.key = fourcc;
+
+        let output = match self.call_struct(SMC_CMD_GET_KEY_INFO, input) {
+            Ok(o) => o,
+            Err(SmcError::SmcResult {
+                cmd: _,
+                result_byte: SMC_ERR_KEY_NOT_FOUND,
+            }) => {
+                self.cache.invalidate(fourcc);
+                return Err(SmcError::KeyNotFound(fourcc));
+            }
+            Err(e) => return Err(e),
+        };
+
+        let raw_size = output.key_info.data_size;
+        let clamped_size = raw_size.min(32);
+        let data_type = output.key_info.data_type;
+        let attrs = output.key_info.data_attributes;
+
+        if clamped_size == 0 && data_type == 0 {
+            return Err(SmcError::EmptyResponse { fourcc });
+        }
+
+        self.cache.put(fourcc, clamped_size, data_type);
+
+        Ok((
+            KeyInfo {
+                data_size: clamped_size,
+                data_type,
+            },
+            attrs,
+        ))
+    }
+
     /// Write bytes to a whitelisted SMC key.
     ///
     /// The `key` argument is a `WritableKey`, which is the ONLY way to
