@@ -4,6 +4,7 @@ pub mod curve_cmd;
 pub mod help;
 pub mod keys;
 pub mod parse;
+pub mod probe;
 pub mod reload;
 pub mod run;
 pub mod selftest;
