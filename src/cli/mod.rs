@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod curve_cmd;
+pub mod force;
 pub mod help;
 pub mod keys;
 pub mod parse;
