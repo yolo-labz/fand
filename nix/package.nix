@@ -37,7 +37,7 @@ let
 in
 rustPlatform.buildRustPackage {
   pname = "fand";
-  version = "0.3.2";
+  version = "0.3.3";
   src = filteredSrc;
   cargoLock.lockFile = ../Cargo.lock;
 
