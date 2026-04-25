@@ -1,0 +1,60 @@
+# TODO: Provision SonarQube project on sonarqube.home301server.com.br:
+#   1. Create project: yolo-labz_fand
+#   2. Generate PROJECT_ANALYSIS_TOKEN (scoped to this project key)
+#   3. Set repo variable SONAR_HOST_URL = https://sonarqube.home301server.com.br
+#   4. Set repo secret SONAR_TOKEN = <the project analysis token>
+#
+# NOTE: fand's test suite is macOS-only (IOKit/SMC). This workflow runs on
+# ubuntu-latest and performs Sonar's intrinsic Rust static analysis only;
+# no coverage upload. Adding cargo-llvm-cov would require a macOS job that
+# uploads lcov.info as an artifact — deferred until needed.
+#
+# SECURITY NOTE: no untrusted event payloads used in run: contexts.
+
+name: SonarQube scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  scan:
+    name: SonarQube scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+      - name: Checkout (full history for blame-based coverage)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Skip if SonarQube not configured
+        id: check
+        env:
+          HOST: ${{ vars.SONAR_HOST_URL }}
+          TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$TOKEN" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "SONAR_HOST_URL or SONAR_TOKEN not set — skipping Sonar scan."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: SonarQube scan
+        if: steps.check.outputs.skip == 'false'
+        uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4 # v7.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
