@@ -43,7 +43,7 @@ jobs:
 
       - name: cargo miri test (lib, FFI excluded)
         env:
-          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-isolation-error=warn"
+          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-disable-isolation"
         run: |
           cargo miri test \
             --lib \
