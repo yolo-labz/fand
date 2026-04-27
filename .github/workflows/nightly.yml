@@ -60,7 +60,6 @@ jobs:
       - name: Run mutants in --in-diff origin/main mode
         run: |
           cargo mutants \
-            --baseline auto \
             --in-diff origin/main \
             --timeout-multiplier 2.0 \
             --file 'src/control/state.rs' \
@@ -96,7 +95,7 @@ jobs:
           cargo install --locked kani-verifier
           cargo kani setup
       - name: Run all cfg(kani) proof harnesses
-        run: cargo kani --enable-unstable
+        run: cargo kani
       - name: Upload proof logs
         uses: actions/upload-artifact@v4
         if: always()
