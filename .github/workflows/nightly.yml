@@ -57,15 +57,19 @@ jobs:
           rustup override set stable
           rustc --version
       - run: cargo install --locked cargo-mutants
-      - name: Ensure origin/main ref present
-        # cargo-mutants 27.0 reads the diff against `origin/main`; the runner
-        # checked out the PR HEAD only, so `origin/main` may not be a ref
-        # locally even with `fetch-depth: 0`. Force-fetch it.
-        run: git fetch --depth 1 origin main:refs/remotes/origin/main || git fetch origin main
-      - name: Run mutants in --in-diff origin/main mode
+      - name: Compute diff vs origin/main into a file
+        # cargo-mutants 27.0 changed `--in-diff` from "git ref" to "path to a
+        # unified-diff file". `--in-diff origin/main` is now interpreted as a
+        # file path → `Failed to open diff file`. Materialize the diff first.
+        # Reference: cargo-mutants 27.0 release notes on `--in-diff`.
+        run: |
+          git fetch --depth 1 origin main:refs/remotes/origin/main || git fetch origin main
+          git diff origin/main..HEAD > /tmp/main.diff
+          ls -la /tmp/main.diff
+      - name: Run mutants in --in-diff file mode
         run: |
           cargo mutants \
-            --in-diff origin/main \
+            --in-diff /tmp/main.diff \
             --timeout-multiplier 2.0 \
             --file 'src/control/state.rs' \
             --file 'src/smc/round_trip.rs' \
