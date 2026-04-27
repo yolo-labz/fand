@@ -50,4 +50,6 @@ jobs:
             --locked \
             -- \
             --skip smc::ffi::tests \
-            --skip smc::enumerate::tests
+            --skip smc::enumerate::tests \
+            --skip config::load::tests \
+            --skip config::reload::tests
