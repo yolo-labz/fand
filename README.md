@@ -150,3 +150,9 @@ cargo clippy -- -D warnings  # lint
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+## Services
+
+Compliance-grade AI architecture for regulated workloads — async-first, USD-denominated, LATAM-based / EN-fluent. See [blog.home301server.com.br/services](https://blog.home301server.com.br/services/).
