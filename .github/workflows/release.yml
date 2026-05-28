@@ -26,6 +26,11 @@ jobs:
       id-token: write
       attestations: write
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
@@ -47,6 +52,28 @@ jobs:
 
       - name: Check binary runs
         run: ./fand-aarch64-darwin version
+
+      # FR-046 — dual-format SBOM (CycloneDX + SPDX) emitted by syft.
+      # Anchore sbom-action auto-uploads each generated file as a release
+      # asset (upload-release-assets defaults to true). Both runs scan the
+      # same release binary so the SBOMs describe what users actually
+      # download; the binary-graph view catches transitive crates that the
+      # source-tree view would miss after dead-code elimination.
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          file: ./fand-aarch64-darwin
+          format: cyclonedx-json
+          output-file: fand-aarch64-darwin.cdx.json
+          artifact-name: fand-sbom-cyclonedx
+
+      - name: Generate SBOM (SPDX)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          file: ./fand-aarch64-darwin
+          format: spdx-json
+          output-file: fand-aarch64-darwin.spdx.json
+          artifact-name: fand-sbom-spdx
 
       - uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
@@ -73,3 +100,7 @@ jobs:
             ```
             gh attestation verify ./fand-aarch64-darwin --owner yolo-labz
             ```
+
+            ### SBOM (dual-format)
+            CycloneDX 1.x JSON: `fand-aarch64-darwin.cdx.json`
+            SPDX 2.x JSON: `fand-aarch64-darwin.spdx.json`
