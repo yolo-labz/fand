@@ -1,0 +1,43 @@
+# zizmor configuration
+#
+# Documented exceptions to the "every action SHA-pinned" rule.
+#
+# DeterminateSystems actions are pinned to @main by intent:
+#   - nix-installer-action and magic-nix-cache-action are not versioned with
+#     semver tags on the v0 branch; the project ships breaking-change-free
+#     updates to @main as the canonical reference per their docs.
+#   - SHA-pinning would require manual bumps for every Nix installer
+#     security patch, defeating the purpose.
+#
+# Re-evaluate this exception when:
+#   - DeterminateSystems adopts semver tags, OR
+#   - A documented threat model justifies SHA-pinning their actions despite
+#     the lifecycle mismatch.
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "DeterminateSystems/*": ref-pin
+  cache-poisoning:
+    ignore:
+      # release.yml uses magic-nix-cache-action transitively to share Nix
+      # store hits between the build-and-test workflow and the release tag
+      # workflow. The released binary is verified post-build via:
+      #   - codesign --verify (ad-hoc signature integrity)
+      #   - cargo --locked (Cargo.lock determinism)
+      #   - actions/attest-build-provenance (SLSA L2 attestation)
+      # A poisoned cache hit would still produce an attested binary whose
+      # provenance points back to this exact workflow run, surfacing the
+      # tamper. Cache-removal would also be an acceptable hardening if the
+      # release-time Nix rebuild is acceptable. Tracked for follow-up.
+      - release.yml
+  superfluous-actions:
+    ignore:
+      # softprops/action-gh-release is preferred over a `gh release create`
+      # script step because the multi-line markdown release body (with code
+      # fences + heredoc substitution) is significantly more robust through
+      # the YAML `with: body:` channel than through `gh release create
+      # --notes "$BODY"` shell interpolation. Pre-existing pattern; refactor
+      # out of scope for this SHA-pin + permissions hardening PR.
+      - release.yml
