@@ -1,0 +1,44 @@
+# lefthook — local git hooks for fand.
+#
+# Mirrors the CI surface (cargo fmt / clippy / check / test / deny) so a
+# clean local `git push` lands a clean CI run. Conventional Commits gate on
+# commit-msg keeps `git-cliff` (cliff.toml) able to generate CHANGELOG.md
+# without manual cleanup.
+#
+# Install once per clone:
+#   lefthook install
+#
+# Bypass (CI-equivalent gates run anyway):
+#   LEFTHOOK=0 git commit ...
+#   LEFTHOOK=0 git push ...
+
+pre-commit:
+  parallel: true
+  commands:
+    fmt:
+      glob: "*.rs"
+      run: cargo fmt --all -- --check
+    clippy:
+      glob: "*.rs"
+      run: cargo clippy --all-targets --all-features -- -D warnings
+    cargo-check:
+      glob: "Cargo.{toml,lock}"
+      run: cargo check --all-targets
+
+pre-push:
+  parallel: true
+  commands:
+    test:
+      run: cargo test --all-targets
+    deny:
+      run: cargo deny check
+
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        if ! grep -qE '^(feat|fix|refactor|chore|docs|ci|test|style|perf|build|revert)(\([a-z0-9-]+\))?(!)?: ' {1}; then
+          echo "Commit message must follow Conventional Commits format" >&2
+          echo "Example: feat(thermal): add per-fan curve override" >&2
+          exit 1
+        fi
