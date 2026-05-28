@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="fand-hero-title fand-hero-desc">
+  <title id="fand-hero-title">fand: Apple Silicon fan control daemon</title>
+  <desc id="fand-hero-desc">Catppuccin Mocha card. Left panel shows the wordmark fand in mauve over a monospaced tagline. Right panel shows a fan rotor with five blades over a temperature gradient ramp from peach to blue, plus an Apple silhouette anchoring the lower-right corner.</desc>
+  <rect width="1200" height="360" fill="#1e1e2e"/>
+  <rect x="0" y="0" width="1200" height="3" fill="#cba6f7"/>
+  <g font-family="ui-serif,Georgia,'Iowan Old Style','Apple Garamond',serif" fill="#cdd6f4">
+    <text x="72" y="170" font-size="120" font-weight="700" letter-spacing="-4">fand</text>
+  </g>
+  <g font-family="ui-monospace,'JetBrains Mono','Fira Code',Menlo,monospace" fill="#a6adc8">
+    <text x="76" y="218" font-size="20">temperature-driven fan curves</text>
+    <text x="76" y="246" font-size="20">for apple silicon macbooks</text>
+  </g>
+  <g font-family="ui-monospace,'JetBrains Mono','Fira Code',Menlo,monospace" fill="#6c7086">
+    <text x="76" y="296" font-size="14">nix run github:yolo-labz/fand</text>
+  </g>
+  <g transform="translate(720,60)">
+    <g font-family="ui-monospace,'JetBrains Mono','Fira Code',Menlo,monospace" fill="#6c7086">
+      <text x="0" y="14" font-size="11">50C</text>
+      <text x="100" y="14" font-size="11">65C</text>
+      <text x="200" y="14" font-size="11">75C</text>
+      <text x="300" y="14" font-size="11">85C</text>
+    </g>
+    <rect x="0" y="22" width="80" height="6" fill="#89b4fa" opacity="0.85"/>
+    <rect x="80" y="22" width="80" height="6" fill="#94e2d5" opacity="0.85"/>
+    <rect x="160" y="22" width="80" height="6" fill="#f9e2af" opacity="0.85"/>
+    <rect x="240" y="22" width="80" height="6" fill="#fab387" opacity="0.85"/>
+    <g font-family="ui-monospace,'JetBrains Mono','Fira Code',Menlo,monospace" fill="#585b70">
+      <text x="0" y="48" font-size="10">2317 rpm</text>
+      <text x="288" y="48" font-size="10" text-anchor="end">6550 rpm</text>
+    </g>
+    <g transform="translate(160,180)">
+      <circle cx="0" cy="0" r="92" fill="#181825" stroke="#313244" stroke-width="2"/>
+      <circle cx="0" cy="0" r="76" fill="none" stroke="#45475a" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"/>
+      <g stroke="none" fill="#cba6f7">
+        <g transform="rotate(0)">
+          <path d="M0,0 Q22,-12 60,-28 Q72,-12 28,0 Q72,12 60,28 Q22,12 0,0 Z" opacity="0.92"/>
+        </g>
+        <g transform="rotate(72)">
+          <path d="M0,0 Q22,-12 60,-28 Q72,-12 28,0 Q72,12 60,28 Q22,12 0,0 Z" opacity="0.92"/>
+        </g>
+        <g transform="rotate(144)">
+          <path d="M0,0 Q22,-12 60,-28 Q72,-12 28,0 Q72,12 60,28 Q22,12 0,0 Z" opacity="0.92"/>
+        </g>
+        <g transform="rotate(216)">
+          <path d="M0,0 Q22,-12 60,-28 Q72,-12 28,0 Q72,12 60,28 Q22,12 0,0 Z" opacity="0.92"/>
+        </g>
+        <g transform="rotate(288)">
+          <path d="M0,0 Q22,-12 60,-28 Q72,-12 28,0 Q72,12 60,28 Q22,12 0,0 Z" opacity="0.92"/>
+        </g>
+      </g>
+      <circle cx="0" cy="0" r="14" fill="#1e1e2e" stroke="#cba6f7" stroke-width="2"/>
+      <circle cx="0" cy="0" r="4" fill="#cba6f7"/>
+    </g>
+  </g>
+  <g transform="translate(1064,248)" fill="#a6adc8" opacity="0.55">
+    <path d="M48,4 C52,4 56,2 60,0 C66,0 76,8 76,22 C76,32 70,46 60,46 C56,46 52,44 48,44 C44,44 40,46 36,46 C26,46 20,32 20,22 C20,8 30,0 36,0 C40,2 44,4 48,4 Z"/>
+    <path d="M52,-8 C52,-4 50,-2 46,0 C46,-4 48,-6 52,-8 Z"/>
+  </g>
+  <g font-family="ui-monospace,'JetBrains Mono','Fira Code',Menlo,monospace" fill="#585b70">
+    <text x="1128" y="338" font-size="11" text-anchor="end">yolo-labz/fand</text>
+  </g>
+</svg>
