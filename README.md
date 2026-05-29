@@ -1,8 +1,53 @@
-# fand — Apple Silicon Fan Control Daemon
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
+  <img alt="fand: Apple Silicon fan control daemon" src="docs/assets/hero-dark.svg">
+</picture>
 
-A FOSS CLI fan controller for Apple Silicon MacBooks (M1–M5). Manages fan speed via temperature-to-RPM curves with hysteresis, rate limiting, and bumpless transfer. Designed to run as a root LaunchDaemon managed declaratively via nix-darwin.
+# fand
 
-> **Important**: On Apple Silicon M-series, the SMC only accepts `F0md=0` (auto) and `F0md=1` (forced minimum). Arbitrary RPM targets are read-only. The daemon's curve output maps to a binary decision: if the curve says RPM near minimum → forced minimum; otherwise → auto (thermalmonitord manages). See [RD-08](docs/SMC-PROTOCOL.md) for details.
+**Pattern.** Temperature-driven fan curve daemon for Apple Silicon MacBooks (M1–M5). A single-threaded control loop reads SMC sensors, applies per-fan curves with EMA smoothing and hysteresis, and drives `F0md` (forced-minimum vs auto) on the AppleSMC.
+
+**Trade-off.** Exact-pinned dependencies and a reproducible nix build over `cargo update` flexibility — the reasoning is that SMC writes are safety-critical (thermal hazard if two daemons race for the keyspace, or if a stale curve survives a config reload) and silent crate skew is the failure mode worth foreclosing first.
+
+**Use when.** macOS thermal management needs aggressive cooling curves on demand without iStat Menus / Macs Fan Control GUI overhead, declaratively configured via nix-darwin, with single-instance enforcement and a panic-temp override that survives sensor faults.
+
+```bash
+nix run github:yolo-labz/fand                       # one-shot build + status
+sudo fand validate --config /etc/fand.toml          # config gate
+sudo fand run --config /etc/fand.toml               # foreground daemon
+```
+
+> **SMC reality.** On Apple Silicon M-series, the SMC only accepts `F0md=0` (auto) and `F0md=1` (forced minimum). Arbitrary RPM targets are read-only. The daemon's curve output reduces to a binary decision per tick: if the curve says RPM near hardware minimum → forced minimum; otherwise → auto (`thermalmonitord` manages from there). See [RD-08](docs/SMC-PROTOCOL.md) for the protocol derivation.
+
+## Demo
+
+A non-interactive 24-second `asciinema` cast covering `fand --help`, `fand status`, `fand show`, `sudo fand keys`, `fand validate`, and `sudo fand reload` is checked into the repo at [`docs/assets/fand-demo.cast`](./docs/assets/fand-demo.cast). Replay locally:
+
+```bash
+asciinema play docs/assets/fand-demo.cast
+```
+
+A hosted player embed will land in a follow-up PR after the cast is uploaded to `asciinema.org`.
+
+## How `fand` compares
+
+Closest peers in the macOS thermal-management ecosystem:
+
+| Capability                              | `fand` (this repo) | [Macs Fan Control](https://crystalidea.com/macs-fan-control) | [iStat Menus](https://bjango.com/mac/istatmenus/) |
+|-----------------------------------------|:---:|:---:|:---:|
+| nix-darwin LaunchDaemon module          | yes | no (GUI installer)               | no (commercial installer)         |
+| Headless daemon (no GUI required)       | yes | GUI required                     | GUI required                      |
+| Apple Silicon SMC writes (`F0md`)       | yes | yes                              | yes                               |
+| SLSA L2 + dual SBOM + Sigstore          | yes | no                               | no                                |
+| Open source                             | MIT | donationware (closed source)     | commercial license                |
+| `loom` + `miri` concurrency tested      | yes | no                               | no                                |
+| Exact-pinned reproducible build         | yes | no                               | no                                |
+| Single-instance flock enforcement       | yes | no                               | no                                |
+| Panic-temp override + hold              | yes | manual config                    | manual config                     |
+| TOML config + signal-driven reload      | yes | no (GUI)                         | no (GUI)                          |
+
+For Intel-era SMC tooling see [`smcFanControl`](https://github.com/hholtmann/smcFanControl) — different SMC contract (`Fx*` RPM writes), not portable to Apple Silicon.
 
 ## Installation
 
