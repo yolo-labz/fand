@@ -35,6 +35,10 @@ updates:
       - dependencies
       - rust
     groups:
+      # Group only non-breaking bumps; major bumps come as individual PRs so a
+      # breaking binding update (io-kit-sys, mach2, signal-hook) can't block the
+      # safe minor/patch group (cf. the all-in-one #30 that broke the build).
       cargo:
-        patterns:
-          - "*"
+        update-types:
+          - minor
+          - patch
