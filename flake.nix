@@ -11,9 +11,13 @@
   description = "fand — Apple Silicon fan control daemon";
 
   inputs = {
-    # FR-004: pin to stable nixpkgs. flake.lock records exact commit.
+    # FR-004: pin to the 25.11 stable release branch. flake.lock records exact commit.
     # FR-030/FR-031: update monthly or on security advisories.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
+    # NB: track release-25.11 (not the nixpkgs-25.11-darwin channel alias) so the
+    # crates.io→static.crates.io importCargoLock migration is present. The Hydra-gated
+    # -darwin channel lags release-25.11 by days, and its tip still pointed at the
+    # rate-limited crates.io/api/v1 endpoint that 403s on cache-miss crate fetches.
+    nixpkgs.url = "github:NixOS/nixpkgs/release-25.11";
   };
 
   outputs = {

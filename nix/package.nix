@@ -1,6 +1,9 @@
 # nix/package.nix — fand Nix derivation.
 #
-# FR-010: rustPlatform.buildRustPackage with IOKit + CoreFoundation.
+# FR-010: rustPlatform.buildRustPackage. IOKit + CoreFoundation come from the
+#         default Apple SDK in stdenv on nixpkgs 25.11 — the legacy
+#         darwin.apple_sdk.frameworks.* stubs were removed, so they are no
+#         longer listed as buildInputs (cf. nixpkgs by-name macmon).
 # FR-013: sandbox profile installed to $out/share/fand/.
 # FR-014: cargoLock.lockFile for pinned dependencies.
 # FR-034: doCheck enables cargo test during nix build.
@@ -12,7 +15,6 @@
 {
   lib,
   rustPlatform,
-  darwin,
   sourceEpoch ? 0,
 }:
 let
@@ -43,11 +45,6 @@ rustPlatform.buildRustPackage {
 
   # FR-048: reproducible builds via SOURCE_DATE_EPOCH from flake.
   env.SOURCE_DATE_EPOCH = toString sourceEpoch;
-
-  buildInputs = [
-    darwin.apple_sdk.frameworks.IOKit
-    darwin.apple_sdk.frameworks.CoreFoundation
-  ];
 
   # FR-034: run cargo test --lib during nix build.
   doCheck = true;
