@@ -1,0 +1,40 @@
+---
+version: 2
+updates:
+  # GitHub Actions — weekly. Dependabot preserves the `# vX.Y.Z` comment next to
+  # each SHA-pinned action, so the logical version stays readable while the SHA
+  # bumps (satisfies Scorecard Dependency-Update-Tool + keeps Pinned-Dependencies fresh).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Recife
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    labels:
+      - dependencies
+      - github-actions
+
+  # Rust crates — grouped weekly bump.
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Recife
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    labels:
+      - dependencies
+      - rust
+    groups:
+      cargo:
+        patterns:
+          - "*"
