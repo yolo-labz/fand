@@ -22,7 +22,7 @@ serde = { version = "=1.0.210", features = ["derive"] }   # T002: exact pin
 signal-hook = "=0.3.17"                                   # FR-071 from feature 003; T002: exact pin (was ">=0.3.17, <0.4")
 thiserror = "=2.0.18"                                     # feature 005 FR-031: derive(Error) for SmcError; T002: exact pin
 textplots = "=0.8.4"                                      # T002: exact pin
-toml = "=0.8.19"                                          # T002: exact pin
+toml = "=0.9.5"                                          # T002: exact pin
 
 [features]
 # T052, T053: opt-in feature for live-hardware integration tests that
