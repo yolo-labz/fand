@@ -86,10 +86,21 @@ impl core::fmt::Display for ClampedRpm {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
 
-    // Guard against env-var bleed between parallel tests — each test that
-    // sets FAND_SAFE_MIN_RPM unsets it in a finally-style pattern.
+    // FAND_SAFE_MIN_RPM is process-global, and `cargo test` runs tests in
+    // parallel threads. The previous "unset in a finally-style pattern" did NOT
+    // prevent a sibling test from clobbering this test's value mid-run, so the
+    // safe-min assertions flaked nondeterministically. Serialize every
+    // env-mutating test on one lock: set -> run -> unset is now atomic w.r.t.
+    // other tests. Recover from a poisoned lock (a test that panicked while
+    // holding it) so a single failure can't cascade into the rest.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
     fn with_safe_min<F: FnOnce() -> R, R>(value: Option<&str>, f: F) -> R {
+        let _guard = ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         match value {
             Some(v) => std::env::set_var(SAFE_MIN_ENV, v),
             None => std::env::remove_var(SAFE_MIN_ENV),
