@@ -159,6 +159,14 @@ jobs:
     name: cargo-deny check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # cargo-deny-action runs in a musl container whose rustup honors the repo's
+    # rust-toolchain.toml (channel 1.84.0 + rust-src), which is NOT installed in
+    # that image -> "override toolchain '1.84.0-x86_64-unknown-linux-musl' is not
+    # installed". cargo-deny only shells out to `cargo metadata`, so the exact
+    # toolchain is irrelevant here; pin rustup to the image's bundled stable to
+    # ignore rust-toolchain.toml. (The other jobs install 1.84.0 natively.)
+    env:
+      RUSTUP_TOOLCHAIN: stable
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: cargo-deny check
