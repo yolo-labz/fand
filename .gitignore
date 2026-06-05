@@ -17,3 +17,12 @@ Thumbs.db
 
 # Speckit
 .specify/init-options.json
+
+# AI tooling config — keep local, never commit
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+/.claude/
+/.cursor/
+.aider*
+.github/copilot-instructions.md
