@@ -42,3 +42,9 @@ commit-msg:
           echo "Example: feat(thermal): add per-fan curve override" >&2
           exit 1
         fi
+    no-ai-trailers:
+      run: |
+        if grep -qiE 'co-authored-by:[[:space:]]*(claude|opus|sonnet|gpt|codex)|generated with claude code|🤖' {1}; then
+          echo "Remove the AI authorship trailer / robot emoji from the commit message" >&2
+          exit 1
+        fi
