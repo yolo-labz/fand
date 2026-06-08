@@ -13,7 +13,7 @@ license = "MIT"
 # transitive compatibility with `toml_edit` which the workspace pulls in.
 bytemuck = { version = "=1.25.0", features = ["derive"] }  # FR-031: safe Zeroable derive (T002: exact pin)
 core-foundation = "=0.10.1"                               # T002: exact pin
-fs4 = "=0.12.0"                                           # feature 005 FR-050: flock for single-instance (RD-05, FR-101 re-eval by 2026-10-01); T002: exact pin
+fs4 = "=1.1.0"                                           # feature 005 FR-050: flock for single-instance (RD-05, FR-101 re-eval by 2026-10-01); T002: exact pin
 io-kit-sys = "=0.5.0"                                     # FR-054: exact pin, avoid 0.5.0 docs.rs failure
 libc = "=0.2.186"                                         # T002: exact pin
 lexopt = "=0.3.2"                                         # T002: exact pin
