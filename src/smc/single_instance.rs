@@ -20,8 +20,6 @@ use std::io::Write;
 use std::os::fd::FromRawFd;
 use std::path::PathBuf;
 
-use fs4::fs_std::FileExt;
-
 /// Default lockfile path. Canonicalized at runtime to resolve the macOS
 /// `/var/run → /private/var/run` symlink.
 pub const DEFAULT_LOCKFILE_PATH: &str = "/var/run/fand-smc.lock";
@@ -130,16 +128,21 @@ impl FlockGuard {
         let file = unsafe { File::from_raw_fd(fd) };
 
         // Step 5: try the exclusive non-blocking lock.
-        // `fs4::try_lock_exclusive` returns Ok(()) on success and
-        // Err(ErrorKind::WouldBlock) when the lock is already held.
-        if let Err(e) = file.try_lock_exclusive() {
+        // `fs4::FileExt::try_lock` returns Ok(()) on success and
+        // Err(fs4::TryLockError::WouldBlock) when the lock is already held.
+        // Called via fully-qualified syntax so it always binds to the fs4
+        // trait method: std stabilized an inherent `File::try_lock` in 1.89
+        // with different semantics (Ok(false) on contention, never Err), which
+        // method-call syntax would silently prefer on toolchains >= 1.89
+        // (miri/nightly/cargo-mutants jobs override the 1.84 pin).
+        if let Err(e) = fs4::FileExt::try_lock(&file) {
             // Read the PID content for the diagnostic (treated as untrusted).
             let holder_pid = Self::read_holder_pid_from_path(&canonical_path);
             drop(file); // release fd
-                        // Any error from try_lock_exclusive is treated as "already held"
-                        // for diagnostic purposes — the only realistic error kinds are
-                        // WouldBlock (EWOULDBLOCK) and filesystem-level issues which are
-                        // rare on local APFS.
+                        // Any error from try_lock is treated as "already held"
+                        // for diagnostic purposes — the only realistic variants are
+                        // TryLockError::WouldBlock and filesystem-level
+                        // TryLockError::Error, which is rare on local APFS.
             let _ = e;
             return Err(FlockError::AlreadyHeld { holder_pid });
         }
@@ -241,7 +244,7 @@ impl Drop for FlockGuard {
         // needs the explicit unlock call to avoid leaving stale state on
         // some Darwin kernels where rapid acquire/release cycles observe
         // inconsistent lock-held snapshots.
-        let _ = fs4::fs_std::FileExt::unlock(&self._file);
+        let _ = fs4::FileExt::unlock(&self._file);
     }
 }
 
