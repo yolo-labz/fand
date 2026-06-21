@@ -9,7 +9,7 @@ Apple Silicon fan control daemon. Reads SMC temperature sensors, evaluates per-f
 ## Stack
 
 - **Language:** Rust, edition 2021
-- **Toolchain pin:** `rust-toolchain.toml` → channel `1.84.0` (matches `Cargo.toml` `rust-version = "1.84"`)
+- **Toolchain pin:** `rust-toolchain.toml` → channel `1.85.0` (matches `Cargo.toml` `rust-version = "1.85"`)
 - **Dependencies:** exact-version pins per FR-078 (no caret, no tilde, no wildcards) — see `Cargo.toml`
 - **Platform:** `aarch64-darwin` only (Apple Silicon M-series)
 - **Privilege:** root via launchd; AppleSMC writes are safety-critical (see `docs/SMC-PROTOCOL.md` + `docs/SECURITY.md`)
@@ -20,7 +20,7 @@ Apple Silicon fan control daemon. Reads SMC temperature sensors, evaluates per-f
 ```
 fand/
   Cargo.toml             # exact-pinned deps + clippy safety-critical lints
-  rust-toolchain.toml    # 1.84.0 pin
+  rust-toolchain.toml    # 1.85.0 pin
   deny.toml              # cargo-deny supply-chain policy
   flake.nix              # aarch64-darwin-only flake (packages + module + devShell)
   build.rs               # build-time metadata

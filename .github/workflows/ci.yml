@@ -39,8 +39,8 @@ jobs:
 
       - name: Install pinned Rust toolchain
         run: |
-          rustup toolchain install 1.84.0 --profile minimal --component rustfmt,clippy
-          rustup default 1.84.0
+          rustup toolchain install 1.85.0 --profile minimal --component rustfmt,clippy
+          rustup default 1.85.0
 
       - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -83,8 +83,8 @@ jobs:
           persist-credentials: false
       - name: Install pinned Rust toolchain
         run: |
-          rustup toolchain install 1.84.0 --profile minimal --component clippy
-          rustup default 1.84.0
+          rustup toolchain install 1.85.0 --profile minimal --component clippy
+          rustup default 1.85.0
       - run: cargo clippy --all-targets --locked 2>&1 || echo "::warning::clippy has warnings/errors (non-blocking until codebase cleanup)"
 
   rustfmt:
@@ -104,8 +104,8 @@ jobs:
           persist-credentials: false
       - name: Install pinned Rust toolchain
         run: |
-          rustup toolchain install 1.84.0 --profile minimal --component rustfmt
-          rustup default 1.84.0
+          rustup toolchain install 1.85.0 --profile minimal --component rustfmt
+          rustup default 1.85.0
       - run: cargo fmt --check
 
   nix-build:
@@ -160,11 +160,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # cargo-deny-action runs in a musl container whose rustup honors the repo's
-    # rust-toolchain.toml (channel 1.84.0 + rust-src), which is NOT installed in
-    # that image -> "override toolchain '1.84.0-x86_64-unknown-linux-musl' is not
+    # rust-toolchain.toml (channel 1.85.0 + rust-src), which is NOT installed in
+    # that image -> "override toolchain '1.85.0-x86_64-unknown-linux-musl' is not
     # installed". cargo-deny only shells out to `cargo metadata`, so the exact
     # toolchain is irrelevant here; pin rustup to the image's bundled stable to
-    # ignore rust-toolchain.toml. (The other jobs install 1.84.0 natively.)
+    # ignore rust-toolchain.toml. (The other jobs install 1.85.0 natively.)
     env:
       RUSTUP_TOOLCHAIN: stable
     steps:

@@ -3,6 +3,6 @@ pub fn execute() {
         "fand {} schema {} rustc {}",
         env!("CARGO_PKG_VERSION"),
         1,
-        "1.84.0"
+        "1.85.0"
     );
 }
