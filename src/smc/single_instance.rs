@@ -134,7 +134,7 @@ impl FlockGuard {
         // trait method: std stabilized an inherent `File::try_lock` in 1.89
         // with different semantics (Ok(false) on contention, never Err), which
         // method-call syntax would silently prefer on toolchains >= 1.89
-        // (miri/nightly/cargo-mutants jobs override the 1.84 pin).
+        // (miri/nightly/cargo-mutants jobs override the 1.85 pin).
         if let Err(e) = fs4::FileExt::try_lock(&file) {
             // Read the PID content for the diagnostic (treated as untrusted).
             let holder_pid = Self::read_holder_pid_from_path(&canonical_path);

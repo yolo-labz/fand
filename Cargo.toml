@@ -2,7 +2,7 @@
 name = "fand"
 version = "0.3.4"                                        # feature 006: ultrathink bypass (force-rpm + enumerate)
 edition = "2021"
-rust-version = "1.84"
+rust-version = "1.85"
 description = "Apple Silicon fan control daemon"
 license = "MIT"
 

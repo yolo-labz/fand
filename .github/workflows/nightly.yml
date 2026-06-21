@@ -55,7 +55,7 @@ jobs:
           fetch-depth: 0
       - name: Install + override rustc to latest stable
         # cargo-mutants >= 27.0 requires rustc 1.88+. The repo's rust-toolchain.toml
-        # pins to 1.84.0; `rustup default stable` doesn't override the toml. Use
+        # pins to 1.85.0; `rustup default stable` doesn't override the toml. Use
         # `rustup override set` which writes to the local override file and wins
         # over rust-toolchain.toml.
         run: |
