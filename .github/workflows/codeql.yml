@@ -1,0 +1,62 @@
+name: CodeQL
+
+# Static security analysis (advanced setup). Public repo → CodeQL is $0.
+# Rust uses build-mode `none` — the extractor creates the database without a
+# cargo build (docs: "CodeQL creates a database without requiring a build" for
+# C/C++, C#, Java and Rust). That is what lets this run on ubuntu-latest even
+# though fand is a macOS-only crate (unconditional IOKit/mach FFI deps): source
+# extraction needs no target toolchain, no linking, no macOS. Analyzes the
+# unsafe FFI boundary (SMC/IOHID/launchd), config parsing, and env inputs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: "45 7 * * 1" # weekly Monday 07:45 UTC — offset from ATP 07:00 + zellij 07:30
+  workflow_dispatch:
+
+# Deny-all at workflow scope; the analyze job re-grants the minimum it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # checkout
+      security-events: write # upload SARIF to the code-scanning tab
+      actions: read # read workflow run metadata (private-repo compat; harmless on public)
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [rust]
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c35d1b164463ee62a100735382aaaa525c5d3496 # codeql-bundle-v2.25.6
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@c35d1b164463ee62a100735382aaaa525c5d3496 # codeql-bundle-v2.25.6
+        with:
+          category: "/language:${{ matrix.language }}"
