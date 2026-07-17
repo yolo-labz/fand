@@ -11,7 +11,7 @@ license = "MIT"
 # against the project's Rust 1.84 toolchain. Floating caret ranges are forbidden.
 # The caret-less pins below avoid cross-crate-version skew without breaking
 # transitive compatibility with `toml_edit` which the workspace pulls in.
-bytemuck = { version = "=1.25.0", features = ["derive"] }  # FR-031: safe Zeroable derive (T002: exact pin)
+bytemuck = { version = "=1.25.1", features = ["derive"] }  # FR-031: safe Zeroable derive (T002: exact pin)
 core-foundation = "=0.10.1"                               # T002: exact pin
 fs4 = "=1.1.0"                                            # feature 005 FR-050: flock for single-instance (FR-101 re-eval 2026-10-01: bumped 0.12→1.1.0, fs_std flattened to crate root, try_lock_exclusive→try_lock); T002: exact pin
 io-kit-sys = "=0.5.0"                                     # FR-054: exact pin, avoid 0.5.0 docs.rs failure
