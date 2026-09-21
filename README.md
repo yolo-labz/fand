@@ -20,15 +20,17 @@ sudo fand run --config /etc/fand.toml               # foreground daemon
 
 > **SMC reality.** On Apple Silicon M-series, the SMC only accepts `F0md=0` (auto) and `F0md=1` (forced minimum). Arbitrary RPM targets are read-only. The daemon's curve output reduces to a binary decision per tick: if the curve says RPM near hardware minimum → forced minimum; otherwise → auto (`thermalmonitord` manages from there). See [RD-08](docs/SMC-PROTOCOL.md) for the protocol derivation.
 
-## Demo
+## Media status
 
-A non-interactive 24-second `asciinema` cast covering `fand --help`, `fand status`, `fand show`, `sudo fand keys`, `fand validate`, and `sudo fand reload` is checked into the repo at [`docs/assets/fand-demo.cast`](./docs/assets/fand-demo.cast). Replay locally:
+The [legacy cast](docs/assets/fand-demo.cast) is an **unverified historical
+illustration**, not fresh hardware telemetry or evidence of current fan behavior.
+Its displayed temperatures, RPM and reload success have no accompanying machine,
+build or raw-measurement receipt. Do not use those values as a benchmark.
 
-```bash
-asciinema play docs/assets/fand-demo.cast
-```
-
-A hosted player embed will land in a follow-up PR after the cast is uploaded to `asciinema.org`.
+A new read-only capture requires a supported Apple Silicon Mac and an isolated
+recording surface. No SMC writes, daemon reloads or fan-setting changes are needed
+for that capture. See [provenance and safe capture plan](docs/MEDIA.md). The
+21/09/2026 slice corrects presentation only; it does not claim a new hardware demo.
 
 ## How `fand` compares
 
