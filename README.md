@@ -1,10 +1,19 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img alt="fand: Apple Silicon fan control daemon" src="docs/assets/hero-dark.svg">
+  <img alt="fand: Apple Silicon fan control daemon" src="docs/assets/hero-dark.svg" width="640">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/yolo-labz/.github/main/profile/assets/brand/logo-mark-dark.svg">
+  <img src="https://raw.githubusercontent.com/yolo-labz/.github/main/profile/assets/brand/logo-mark-light.svg" alt="yolo-labz" width="48">
 </picture>
 
 # fand
+
+> Configure temperature-driven fan modes on supported Apple Silicon Macs.
+>
+> macOS and suitable SMC sensors required; the adapter chooses **forced minimum or auto**, not arbitrary RPM, and auto delegates to macOS thermal management. This is not a promise of lower temperatures, quieter operation or support for every M-series machine.
 
 **Pattern.** Temperature-driven fan curve daemon for Apple Silicon MacBooks (M1–M5). A single-threaded control loop reads SMC sensors, applies per-fan curves with EMA smoothing and hysteresis, and drives `F0md` (forced-minimum vs auto) on the AppleSMC.
 
@@ -180,7 +189,7 @@ fand keys --all                               # enumerate all SMC keys
 ## Security
 
 - **Codesign**: ad-hoc signed (no Apple Developer ID). The nix store hash is the trust anchor.
-- **Threat model**: see [`docs/SECURITY.md`](docs/SECURITY.md) and [`specs/005-smc-write-roundtrip/threat-model.md`](specs/005-smc-write-roundtrip/threat-model.md)
+- **Threat model**: see [`docs/SECURITY.md`](docs/SECURITY.md)
 - **Supply chain**: cargo-vet attestations in `supply-chain/audits.toml`, cargo-deny policy in `deny.toml`
 - **Verify provenance**: `gh attestation verify ./fand-aarch64-darwin --owner yolo-labz`
 
@@ -198,6 +207,5 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-## Services
-
-Compliance-grade AI architecture for regulated workloads — async-first, USD-denominated, LATAM-based / EN-fluent. See [blog.home301server.com.br/services](https://blog.home301server.com.br/services/).
+Part of **[yolo-labz](https://github.com/yolo-labz)** — small tools, deliberate automation.
+[Org profile](https://github.com/yolo-labz) · [All repositories](https://github.com/orgs/yolo-labz/repositories) · [Engineering notes](https://blog.home301server.com.br)
