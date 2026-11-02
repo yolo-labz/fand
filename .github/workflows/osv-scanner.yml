@@ -23,6 +23,5 @@ jobs:
     with:
       scan-args: |-
         --recursive
-        --skip-git
         ./
       upload-sarif: true
