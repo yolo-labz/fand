@@ -18,6 +18,10 @@ updates:
     labels:
       - dependencies
       - github-actions
+    # Routine bumps arrive as one PR; a major arrives alone, for review.
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
 
   # Rust crates — grouped weekly bump.
   - package-ecosystem: cargo
