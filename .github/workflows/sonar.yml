@@ -85,7 +85,17 @@ jobs:
             touch "$dir.complete"
           fi
       - name: SonarQube scan
+        id: sonar_try1
+        # The server drops large downloads / report uploads under load (Connection reset, SocketTimeout): one retry
+        # resumes from what ~/.sonar/cache already holds. A real analysis failure fails the second attempt too.
+        continue-on-error: true
         if: steps.check.outputs.skip == 'false'
+        uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      - name: SonarQube scan (retry after a dropped download)
+        if: steps.sonar_try1.outcome == 'failure'
         uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
