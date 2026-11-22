@@ -17,7 +17,7 @@
 
 **Pattern.** Temperature-driven fan curve daemon for Apple Silicon MacBooks (M1–M5). A single-threaded control loop reads SMC sensors, applies per-fan curves with EMA smoothing and hysteresis, and drives `F0md` (forced-minimum vs auto) on the AppleSMC.
 
-**Trade-off.** Exact-pinned dependencies and a reproducible nix build over `cargo update` flexibility — the reasoning is that SMC writes are safety-critical (thermal hazard if two daemons race for the keyspace, or if a stale curve survives a config reload) and silent crate skew is the failure mode worth foreclosing first.
+**Trade-off.** Exact-pinned dependencies and a reproducible nix build over `cargo update` flexibility, the reasoning is that SMC writes are safety-critical (thermal hazard if two daemons race for the keyspace, or if a stale curve survives a config reload) and silent crate skew is the failure mode worth foreclosing first.
 
 **Use when.** macOS thermal management needs aggressive cooling curves on demand without iStat Menus / Macs Fan Control GUI overhead, declaratively configured via nix-darwin, with single-instance enforcement and a panic-temp override that survives sensor faults.
 
@@ -58,7 +58,7 @@ Closest peers in the macOS thermal-management ecosystem:
 | Panic-temp override + hold              | yes | manual config                    | manual config                     |
 | TOML config + signal-driven reload      | yes | no (GUI)                         | no (GUI)                          |
 
-For Intel-era SMC tooling see [`smcFanControl`](https://github.com/hholtmann/smcFanControl) — different SMC contract (`Fx*` RPM writes), not portable to Apple Silicon.
+For Intel-era SMC tooling see [`smcFanControl`](https://github.com/hholtmann/smcFanControl), different SMC contract (`Fx*` RPM writes), not portable to Apple Silicon.
 
 ## Installation
 
@@ -205,9 +205,9 @@ cargo clippy -- -D warnings  # lint
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
 
 ---
 
-Part of **[yolo-labz](https://github.com/yolo-labz)** — small tools, deliberate automation.
+Part of **[yolo-labz](https://github.com/yolo-labz)**: small tools, deliberate automation.
 [Org profile](https://github.com/yolo-labz) · [All repositories](https://github.com/orgs/yolo-labz/repositories) · [Engineering notes](https://blog.home301server.com.br)
