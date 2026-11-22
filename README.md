@@ -12,7 +12,7 @@
 >
 > macOS and suitable SMC sensors required; the adapter chooses **forced minimum or auto**, not arbitrary RPM, and auto delegates to macOS thermal management. This is not a promise of lower temperatures, quieter operation or support for every M-series machine.
 
-**Pattern.** Temperature-driven fan curve daemon for Apple Silicon MacBooks (M1–M5). A single-threaded control loop reads SMC sensors, applies per-fan curves with EMA smoothing and hysteresis, and drives `F0md` (forced-minimum vs auto) on the AppleSMC.
+**Pattern.** Temperature-driven fan curve daemon for Apple Silicon MacBooks (M1 to M5). A single-threaded control loop reads SMC sensors, applies per-fan curves with EMA smoothing and hysteresis, and drives `F0md` (forced-minimum vs auto) on the AppleSMC.
 
 **Trade-off.** Exact-pinned dependencies and a reproducible nix build over `cargo update` flexibility, the reasoning is that SMC writes are safety-critical (thermal hazard if two daemons race for the keyspace, or if a stale curve survives a config reload) and silent crate skew is the failure mode worth foreclosing first.
 
